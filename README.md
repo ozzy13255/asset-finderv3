@@ -1,45 +1,39 @@
-# Asset Finder — Online foundation
+# Asset Finder v3.1 — Centralized Online Build
 
-This package is based on the supplied **Asset Finder v2.7.5 Patches** build.
+This is the cleaned, cumulative Asset Finder build. The browser application uses Supabase as the authoritative data store for patches, inventories, approvals, removal requests and profiles.
 
-## Security model
+## Included
+- Supabase Auth login with persistent browser session and recovery-email password reset
+- Owner / Patch Admin / User role isolation enforced by Postgres RLS
+- Central patch inventory with periodic refresh
+- Asset approvals and removal approvals
+- Partial ballast removal (remaining tonnage stays in inventory)
+- Patch-wide inventory print / Save PDF report
+- Responsive mobile search layout
+- Dynamic Add Asset forms for Switch, Crossing, IRJ, Ballast, Rail and Miscellaneous
+- User/admin deletion controls with server-side authorization
+- Profile, recovery email and password change
+- Single account bar with Profile and Log out
+- No offline/local inventory database
 
-- **Owner**: can see and manage every patch, every user and every inventory.
-- **Patch admin**: can only see/manage the patch(es) assigned to them. They cannot query another patch through the API/database.
-- **User**: can only access the patch assigned to them.
-- Employee name, employee number, login code and role are server-controlled. Users can change their password only.
-- New accounts start with a temporary password and `must_change_password=true`.
-- First login forces a password change.
+## Dynamic asset fields
+### Switch
+SC Number, Point Number, Rail Type, Left Hand / Right Hand / Full Set, Stock Length, Switch Length, Switch Type (Straight cut / Chamfered / Undercut).
 
-## Important
+### Crossing
+SC Number, Point Number, Crossing Type, Rail Weight. Crossing-specific dimension fields are intentionally deferred until the real crossing order form is supplied.
 
-The supplied app is still an offline-first v2.7.5 application. This package adds the online authentication/security foundation and cloud inventory bridge, but it is **not production-hosted yet** because it needs your own Supabase project and deployment credentials. Do not put the Supabase service-role key in the browser.
+### IRJ
+SC Number, Rail Length, Rail Type, IRJ Type.
 
-## Setup
+### Ballast
+Amount in tonnes. Partial removals reduce the live quantity and create history/approval records.
 
-1. Create a Supabase project.
-2. Run `supabase/schema.sql` in the SQL editor.
-3. Deploy the two Edge Functions under `supabase/functions/`.
-4. Set the Edge Function secret `BOOTSTRAP_SECRET` before running `bootstrap-owner` once.
-5. Create the owner account with `bootstrap-owner`.
-6. Put the project's URL and **anon/public key** into `window.ASSET_FINDER_CLOUD` in `app/index.html` and set `enabled: true`.
-7. Host the `app/` directory on HTTPS hosting.
+### Rail
+SC Number, Rail Type, Rail Length, Rail Weight.
 
-### Account creation flow
+### Miscellaneous
+Free-text description of the asset.
 
-Owner creates patch admins/users. A patch admin can create users only inside their assigned patch. The temporary password is never stored in `profiles`; Supabase Auth stores the password securely. The profile stores only the immutable employee identity and role plus the `must_change_password` flag.
-
-### Patch isolation
-
-Inventory is stored one row per patch. Row Level Security policies call `can_access_patch(patch_id)`. This means the separation is enforced by Postgres, not merely by hiding buttons in the UI.
-
-## Next production step
-
-The next implementation pass should move all existing inventory CRUD operations from the browser's local `db` object to authenticated cloud operations and add the Owner/Patch Admin user-management screens. The current bridge is deliberately conservative so the original v2.7.5 UI remains intact while the authentication foundation is established.
-
-
-## Online configuration
-The browser client uses the Supabase publishable key. Do not place the Supabase service-role key in this repository or any browser code.
-
-
-UI update: added a persistent Log out button to the authenticated application header.
+## Deployment
+Vercel Root Directory should be `app`. Keep the Supabase service-role key server-side only; the browser uses the publishable key.

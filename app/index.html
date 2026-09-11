@@ -30,6 +30,10 @@
   .print-footer{margin-top:20px;font-size:10px;color:#666}
 }
 </style>
+<style>
+.choice-row{display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:10px 0}.choice-row label{display:flex;gap:7px;align-items:center;font-weight:600}.choice-row input{accent-color:#f2b900}
+</style>
+
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
 <script crossorigin="" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -350,7 +354,7 @@ window.ASSET_FINDER_CLOUD = {
     if(q||mode!=='all'||typeFilter) aps=aps.filter(a=>accessMatches(a,q,mode,typeFilter));
     const patchSelect=state.patches.length>1?`<div class="field" style="min-width:220px"><label>Patch</label><select id="patchSelect">${state.patches.map(x=>`<option value="${esc(x.id)}" ${x.id===state.currentPatchId?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>`:'';
     $('#view').innerHTML=`<div class="toolbar"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">${patchSelect}${isAdmin()?'<button class="btn primary" id="addAccessBtn">＋ Add Access Point</button>':''}<button class="btn secondary" id="historyBtn">Past History (${inv.history.length})</button><button class="btn secondary" id="printInventoryBtn">🖨 Print / Save PDF</button></div></div>
-      <div class="searchbar"><div style="flex:1"><div class="search-filter-label">Search</div><input id="q" class="search" placeholder="Search SC number, points, asset, location…" value="${esc(q)}"></div><div><div class="search-filter-label">Search field</div><select id="searchMode"><option value="all">All</option><option value="sc">SC number</option><option value="points">Points number</option><option value="type">Asset type</option><option value="rail">Rail type</option><option value="w3">What3Words</option></select></div><div><div class="search-filter-label">Asset type</div><select id="assetTypeFilter"><option value="">All asset types</option>${['IRJ','Switch','Crossing','Rail','Sleepers','Bearers','Point Machine','Signal','Other'].map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div></div>
+      <div class="searchbar"><div style="flex:1"><div class="search-filter-label">Search</div><input id="q" class="search" placeholder="Search SC number, points, asset, location…" value="${esc(q)}"></div><div><div class="search-filter-label">Search field</div><select id="searchMode"><option value="all">All</option><option value="sc">SC number</option><option value="points">Points number</option><option value="type">Asset type</option><option value="rail">Rail type</option><option value="w3">What3Words</option></select></div><div><div class="search-filter-label">Asset type</div><select id="assetTypeFilter"><option value="">All asset types</option>${['Switch','Crossing','IRJ','Ballast','Rail','Miscellaneous'].map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div></div>
       <div class="stats"><div class="stat"><b>${apCount}</b><span>Access points</span></div><div class="stat"><b>${assets}</b><span>Assets</span></div><div class="stat"><b>${defective}</b><span>Defective</span></div><div class="stat"><b>${inv.history.length}</b><span>Past history</span></div></div>
       <div id="homeResults">${aps.length?aps.map(a=>accessCard(a)).join(''):`<div class="card empty"><b>No access points found</b><span>${isAdmin()?'Add an access point to start.':'No access points are available in this patch.'}</span></div>`}</div>`;
     $('#searchMode').value=mode; $('#assetTypeFilter').value=typeFilter;
@@ -370,7 +374,7 @@ window.ASSET_FINDER_CLOUD = {
     const totalAssets=aps.reduce((n,a)=>n+(a.assets||[]).length,0);
     const apHtml=aps.length?aps.map(a=>`<section class="print-ap"><h3>${escP(a.name)}</h3><div class="print-meta">What3Words: ${escP(a.w3||'—')} · Lorry access: ${escP(a.lorryAccess||'—')} · Rear wheel steer: ${a.rearWheelSteer?'Required':'No'}${a.notes?` · Notes: ${escP(a.notes)}`:''}</div>${(a.assets||[]).length?(a.assets||[]).map(x=>`<div class="print-asset"><strong>${escP(x.type||'Asset')}</strong> · Status: ${escP(x.status||'In Use')}<br>SC: ${escP(x.sc||'—')} · Points: ${escP(x.points||'—')} · Rail: ${escP(x.railType||'—')} · What3Words: ${escP(x.w3||'—')}${x.description?`<br>${escP(x.description)}`:''}</div>`).join(''):'<div class="print-meta">No active assets</div>'}</section>`).join(''):'<p>No access points recorded.</p>';
     const historyHtml=(inv.history||[]).length?(inv.history||[]).map(h=>`<div class="print-asset"><strong>${escP(h.type||'Asset')}</strong> · SC: ${escP(h.sc||'—')} · Points: ${escP(h.points||'—')} · Removed: ${escP(h.removed?new Date(h.removed).toLocaleString():'—')} · Access point: ${escP(h.accessPointName||'—')}</div>`).join(''):'<div class="print-meta">No past history.</div>';
-    const root=document.createElement('div'); root.id='printInventoryRoot'; root.innerHTML=`<div class="print-title">Asset Finder — ${escP(p.name)} Inventory</div><div class="print-subtitle">Generated ${new Date().toLocaleString()} · ${aps.length} access points · ${totalAssets} active assets</div>${apHtml}<div class="print-history"><h2>Past History</h2>${historyHtml}</div><div class="print-footer">Asset Finder v3.0 · Central inventory report</div>`;
+    const root=document.createElement('div'); root.id='printInventoryRoot'; root.innerHTML=`<div class="print-title">Asset Finder — ${escP(p.name)} Inventory</div><div class="print-subtitle">Generated ${new Date().toLocaleString()} · ${aps.length} access points · ${totalAssets} active assets</div>${apHtml}<div class="print-history"><h2>Past History</h2>${historyHtml}</div><div class="print-footer">Asset Finder v3.1 · Central inventory report</div>`;
     document.body.appendChild(root); document.body.classList.add('print-inventory');
     const cleanup=()=>{document.body.classList.remove('print-inventory');root.remove();window.removeEventListener('afterprint',cleanup);};
     window.addEventListener('afterprint',cleanup); window.print(); setTimeout(()=>{if(document.body.classList.contains('print-inventory'))cleanup();},2000);
@@ -397,8 +401,9 @@ window.ASSET_FINDER_CLOUD = {
   }
 
   function assetCard(a,x){
-    const controls=isAdmin()?`<button class="btn light" data-edit-asset="${esc(x.id)}">Edit</button><button class="btn danger" data-remove-asset="${esc(x.id)}">Remove</button>`:`<button class="btn danger" data-remove-asset="${esc(x.id)}">Request Asset Removal</button>`;
-    return `<div class="card"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">SC: ${esc(x.sc||'—')} · Points: ${esc(x.points||'—')}</div><div class="meta">${statusBadge(x.status)} ${x.railType?`<span class="badge planned">${esc(x.railType)}</span>`:''}</div></div><div class="actions">${controls}</div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}${x.photos?.length?`<div class="photo-grid">${x.photos.map(p=>`<img class="asset-photo" src="${p}" alt="Asset photo">`).join('')}</div>`:''}</div>`;
+    const controls=isAdmin()?`<button class="btn light" data-edit-asset="${esc(x.id)}">Edit</button><button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Remove Ballast':'Remove'}</button>`:`<button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Request Ballast Removal':'Request Asset Removal'}</button>`;
+    const detail=[`SC: ${esc(x.sc||'—')}`,x.points?`Points: ${esc(x.points)}`:'',x.type==='Ballast'?`Amount: ${esc(x.ballastAmountTons)} t`:(x.railLength?`Rail length: ${esc(x.railLength)} m`:''),x.railType?`Rail: ${esc(x.railType)}`:''].filter(Boolean).join(' · ');
+    return `<div class="card"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">${detail}</div><div class="meta">${statusBadge(x.status)} ${x.railType?`<span class="badge planned">${esc(x.railType)}</span>`:''}</div></div><div class="actions">${controls}</div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}${x.photos?.length?`<div class="photo-grid">${x.photos.map(p=>`<img class="asset-photo" src="${p}" alt="Asset photo">`).join('')}</div>`:''}</div>`;
   }
   function statusBadge(s){const t=s||'In Use';const cls=/defective/i.test(t)?'defective':/removed/i.test(t)?'removed':/stored/i.test(t)?'planned':'active';return `<span class="badge ${cls}">${esc(t)}</span>`;}
   function mapHtml(lat,lng,w3){ if(!Number.isFinite(Number(lat))||!Number.isFinite(Number(lng)))return w3?`<div class="meta" style="margin-top:8px"><a href="https://what3words.com/${encodeURIComponent(String(w3).replace(/^\/\/\//,''))}" target="_blank" rel="noopener">Open What3Words</a></div>`:''; return `<div style="margin-top:12px"><a href="https://www.google.com/maps?q=${Number(lat)},${Number(lng)}" target="_blank" rel="noopener">Open location in Maps</a></div>`; }
@@ -419,18 +424,78 @@ window.ASSET_FINDER_CLOUD = {
 
   function normaliseW3(v){const s=String(v||'').trim(); if(!s)return ''; return s.startsWith('///')?s:`///${s.replace(/^\/*/,'').replace(/\s+/g,'.')}`;}
 
+  function assetTypeOptions(selected=''){
+    const types=['Switch','Crossing','IRJ','Ballast','Rail','Miscellaneous'];
+    return `<option value="">Select asset type</option>${types.map(t=>`<option value="${esc(t)}" ${selected===t?'selected':''}>${esc(t)}</option>`).join('')}`;
+  }
+
+  function dynamicAssetFields(x={}){
+    const type=x.type||'';
+    const common = `
+      <div class="field"><label>SC Number *</label><input id="asc" value="${esc(x.sc||'')}" required></div>
+      <div class="field"><label>Description</label><input id="adesc" value="${esc(x.description||'')}"></div>`;
+    if(type==='Rail') return common + `
+      <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','RH','LH','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Rail Length (m) *</label><input id="railLength" inputmode="decimal" value="${esc(x.railLength||'')}" required></div>
+      <div class="field"><label>Rail Weight (kg/m) *</label><input id="railWeight" inputmode="decimal" value="${esc(x.railWeight||'')}" required></div>`;
+    if(type==='Switch') return common + `
+      <div class="field"><label>Point Number *</label><input id="apoints" value="${esc(x.points||'')}" required></div>
+      <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','RH','LH','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field full"><label>Hand / Set *</label><div class="choice-row"><label><input type="radio" name="switchHand" value="Left hand" ${x.switchHand==='Left hand'?'checked':''}> Left hand</label><label><input type="radio" name="switchHand" value="Right hand" ${x.switchHand==='Right hand'?'checked':''}> Right hand</label><label><input type="radio" name="switchHand" value="Full set" ${(!x.switchHand||x.switchHand==='Full set')?'checked':''}> Full set</label></div></div>
+      <div class="field"><label>Stock Length (m) *</label><input id="stockLength" inputmode="decimal" value="${esc(x.stockLength||'')}" required></div>
+      <div class="field"><label>Switch Length (m) *</label><input id="switchLength" inputmode="decimal" value="${esc(x.switchLength||'')}" required></div>
+      <div class="field"><label>Switch Type *</label><select id="switchType" required><option value="">Select switch type</option>${['Straight cut','Chamfered','Undercut'].map(t=>`<option value="${t}" ${x.switchType===t?'selected':''}>${t}</option>`).join('')}</select></div>`;
+    if(type==='Crossing') return common + `
+      <div class="field"><label>Point Number *</label><input id="apoints" value="${esc(x.points||'')}" required></div>
+      <div class="field"><label>Crossing Type *</label><select id="crossingType" required><option value="">Select crossing type</option>${['Common Crossing','Diamond Crossing','Single Slip','Double Slip','Other'].map(t=>`<option value="${t}" ${x.crossingType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Rail Weight (kg/m) *</label><input id="railWeight" inputmode="decimal" value="${esc(x.railWeight||'')}" required></div>
+      <div class="field full"><div class="notice"><b>Crossing dimensions</b><br>Dimension fields will be added once the crossing order-form sketch is provided.</div></div>`;
+    if(type==='IRJ') return common + `
+      <div class="field"><label>Rail Length (m) *</label><input id="railLength" inputmode="decimal" value="${esc(x.railLength||'')}" required></div>
+      <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','RH','LH','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>IRJ Type *</label><input id="irjType" value="${esc(x.irjType||'')}" placeholder="Enter IRJ type" required></div>`;
+    if(type==='Ballast') return `<div class="field full"><label>Amount (tonnes) *</label><input id="ballastAmountTons" inputmode="decimal" value="${esc(x.ballastAmountTons??'')}" min="0" step="0.01" placeholder="e.g. 10" required></div>`;
+    if(type==='Miscellaneous') return `
+      <div class="field full"><label>What is the asset? *</label><textarea id="miscDetails" required>${esc(x.miscDetails||'')}</textarea></div>`;
+    return common;
+  }
+
+  function readAssetDynamicFields(){
+    const type=$('#atype')?.value||'';
+    const get=v=>document.querySelector(v)?.value?.trim()||'';
+    const data={type,sc:get('#asc'),description:get('#adesc'),points:get('#apoints'),railType:get('#arail'),railLength:get('#railLength'),railWeight:get('#railWeight'),switchHand:document.querySelector('input[name="switchHand"]:checked')?.value||'',stockLength:get('#stockLength'),switchLength:get('#switchLength'),switchType:get('#switchType'),crossingType:get('#crossingType'),irjType:get('#irjType'),ballastAmountTons:get('#ballastAmountTons'),miscDetails:get('#miscDetails')};
+    if(!type) throw new Error('Please select an asset type.');
+    if(type!=='Ballast' && type!=='Miscellaneous' && !data.sc) throw new Error('SC number is required.');
+    if(type==='Switch' && (!data.points||!data.railType||!data.switchHand||!data.stockLength||!data.switchLength||!data.switchType)) throw new Error('Please complete all Switch fields.');
+    if(type==='Rail' && (!data.railType||!data.railLength||!data.railWeight)) throw new Error('Please complete all Rail fields.');
+    if(type==='Crossing' && (!data.points||!data.crossingType||!data.railWeight)) throw new Error('Please complete all Crossing fields.');
+    if(type==='IRJ' && (!data.railLength||!data.railType||!data.irjType)) throw new Error('Please complete all IRJ fields.');
+    if(type==='Ballast' && !(Number(data.ballastAmountTons)>0)) throw new Error('Ballast amount must be greater than 0 tonnes.');
+    if(type==='Miscellaneous' && !data.miscDetails) throw new Error('Please describe the miscellaneous asset.');
+    if(type==='Ballast') data.ballastAmountTons=Number(data.ballastAmountTons);
+    return data;
+  }
+
   function openAsset(aid,xid=null){
     const a=patchInventory(state.currentPatchId).accessPoints.find(x=>String(x.id)===String(aid)); if(!a)return;
     const x=xid?(a.assets||[]).find(z=>String(z.id)===String(xid)):null;
-    $('#sheet').innerHTML=`<h2>${x?'Edit Asset':(isAdmin()?'Add Asset':'Request New Asset')}</h2><div class="notice">Stored under <b>${esc(a.name)}</b>.</div><form class="form two" id="assetForm"><div class="field"><label>Asset Type *</label><select id="atype" required><option value="">Select asset type</option>${['IRJ','Switch','Crossing','Rail','Sleepers','Bearers','Point Machine','Signal','Other'].map(t=>`<option value="${esc(t)}" ${x?.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div><div class="field"><label>Rail Type</label><select id="arail"><option value="">Select rail type</option>${['56E1','54E1','CEN60','RH','LH'].map(t=>`<option value="${t}" ${x?.railType===t?'selected':''}>${t}</option>`).join('')}<option value="Other" ${x?.railType==='Other'?'selected':''}>Other</option></select></div><div class="field"><label>Status</label><select id="astatus">${['In Use','Stored','Defective (scrap)'].map(t=>`<option ${x?.status===t?'selected':''}>${t}</option>`).join('')}</select></div><div class="field"><label>Points Number</label><input id="apoints" value="${esc(x?.points||'')}"></div><div class="field"><label>SC Number</label><input id="asc" value="${esc(x?.sc||'')}"></div><div class="field"><label>What3Words</label><input id="aw3a" value="${esc(x?.w3||'')}"></div><div class="field full"><label>Asset Description</label><textarea id="adesc">${esc(x?.description||'')}</textarea></div><div class="field full"><label>Asset Photos</label><input id="photos" type="file" accept="image/*" multiple><div class="small">Photos are stored centrally with the asset record.</div><div id="photoPreview" class="photo-grid"></div></div><div class="actions full"><button type="button" class="btn light" id="cancelAsset">Cancel</button><button class="btn primary">${isAdmin()?'Save Asset':'Submit Asset for Approval'}</button></div></form>`;
-    $('#modal').classList.remove('hidden'); $('#cancelAsset').onclick=closeModal; $('#assetForm').onsubmit=e=>{e.preventDefault();saveAsset(aid,xid);};
+    $('#sheet').innerHTML=`<h2>${x?'Edit Asset':(isAdmin()?'Add Asset':'Request New Asset')}</h2><div class="notice">Stored under <b>${esc(a.name)}</b>.</div><form class="form two" id="assetForm">
+      <div class="field"><label>Asset Type *</label><select id="atype" required>${assetTypeOptions(x?.type||'')}</select></div>
+      <div class="field full" id="dynamicAssetFields">${dynamicAssetFields(x||{})}</div>
+      <div class="field"><label>Status</label><select id="astatus">${['In Use','Stored','Defective (scrap)'].map(t=>`<option ${x?.status===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>What3Words</label><input id="aw3a" value="${esc(x?.w3||'')}"></div>
+      <div class="field full"><label>Asset Photos</label><input id="photos" type="file" accept="image/*" multiple><div class="small">Photos are stored centrally with the asset record.</div><div id="photoPreview" class="photo-grid"></div></div>
+      <div class="actions full"><button type="button" class="btn light" id="cancelAsset">Cancel</button><button class="btn primary">${isAdmin()?'Save Asset':'Submit Asset for Approval'}</button></div></form>`;
+    $('#modal').classList.remove('hidden');
+    $('#cancelAsset').onclick=closeModal;
+    $('#atype').onchange=()=>{ const existing={type:$('#atype').value,status:$('#astatus')?.value||'In Use',w3:$('#aw3a')?.value||''}; $('#dynamicAssetFields').innerHTML=dynamicAssetFields(existing); };
+    $('#assetForm').onsubmit=e=>{e.preventDefault();saveAsset(aid,xid);};
   }
 
   async function readPhotos(input){ const files=[...(input?.files||[])].slice(0,6); const out=[]; for(const f of files){ if(f.size>2_000_000) throw new Error('Each photo must be 2 MB or smaller.'); out.push(await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result));r.onerror=reject;r.readAsDataURL(f)})); } return out; }
 
   async function saveAsset(aid,xid=null){
-    const patchId=state.currentPatchId; const base={type:$('#atype').value.trim(),railType:$('#arail').value,status:$('#astatus').value,points:$('#apoints').value.trim(),sc:$('#asc').value.trim(),w3:normaliseW3($('#aw3a').value),description:$('#adesc').value.trim()};
-    if(!base.type)return;
+    const patchId=state.currentPatchId; let base; try{base={...readAssetDynamicFields(),status:$('#astatus').value,w3:normaliseW3($('#aw3a').value)};}catch(e){alert(e.message);return;}
     let photos=[]; try{photos=await readPhotos($('#photos'));}catch(e){alert(e.message);return;}
     if(!isAdmin()){
       try {
@@ -445,17 +510,42 @@ window.ASSET_FINDER_CLOUD = {
   }
 
   async function removeAsset(aid,xid){
-    if(!isAdmin()){
-      try{
-        const ap=patchInventory(state.currentPatchId).accessPoints.find(x=>x.id===aid);const asset=(ap?.assets||[]).find(x=>x.id===xid);
-        if(!asset)throw new Error('Asset not found.');
-        await api('/rest/v1/asset_removal_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:state.currentPatchId,access_point_id:aid,access_point_name:ap.name,asset_id:xid,asset_data:asset,requested_by:state.profile.id,status:'pending'})});
-        alert('Removal request submitted for approval.');await loadAdminData();return;
-      } catch(e) { alert(e.message||'Could not submit removal request.'); return; }
-    }
-    if(!confirm('Remove this asset? It will move to Past History.'))return;
-    try {
-      await mutateInventory(state.currentPatchId,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(aid));if(!ap)throw new Error('Access point not found.');const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(xid));if(i<0)throw new Error('Asset not found.');const [asset]=ap.assets.splice(i,1);inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});});
+    try{
+      const ap=patchInventory(state.currentPatchId).accessPoints.find(x=>String(x.id)===String(aid));const asset=(ap?.assets||[]).find(x=>String(x.id)===String(xid));
+      if(!asset)throw new Error('Asset not found.');
+      let removalAmount=null;
+      if(asset.type==='Ballast'){
+        const current=Number(asset.ballastAmountTons||0);
+        if(!(current>0))throw new Error('This ballast asset has no remaining quantity recorded.');
+        const entered=prompt(`How many tonnes of ballast do you want to remove?\nAvailable: ${current} tonnes`, String(current));
+        if(entered===null)return;
+        removalAmount=Number(String(entered).replace(',','.'));
+        if(!(removalAmount>0) || removalAmount>current) throw new Error(`Enter an amount between 0 and ${current} tonnes.`);
+      } else if(!confirm('Remove this asset? It will move to Past History.')) return;
+
+      if(!isAdmin()){
+        const requestAsset={...asset};
+        if(asset.type==='Ballast') requestAsset._removalAmountTons=removalAmount;
+        await api('/rest/v1/asset_removal_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:state.currentPatchId,access_point_id:aid,access_point_name:ap.name,asset_id:xid,asset_data:requestAsset,requested_by:state.profile.id,status:'pending'})});
+        alert(asset.type==='Ballast'?`Ballast removal request for ${removalAmount} tonnes submitted for approval.`:'Removal request submitted for approval.');await loadAdminData();return;
+      }
+
+      await mutateInventory(state.currentPatchId,inv=>{
+        const ap2=inv.accessPoints.find(x=>String(x.id)===String(aid));if(!ap2)throw new Error('Access point not found.');
+        const i=(ap2.assets||[]).findIndex(x=>String(x.id)===String(xid));if(i<0)throw new Error('Asset not found.');
+        const currentAsset=ap2.assets[i];
+        if(currentAsset.type==='Ballast'){
+          const current=Number(currentAsset.ballastAmountTons||0);
+          const qty=Number(removalAmount);
+          if(qty>current)throw new Error('Removal amount exceeds the available ballast.');
+          currentAsset.ballastAmountTons=Number((current-qty).toFixed(3));
+          inv.history.unshift({...currentAsset,id:uid(),ballastAmountTons:qty,removedAmountTons:qty,originalBallastAmountTons:current,removed:Date.now(),accessPointId:ap2.id,accessPointName:ap2.name,status:'Removed'});
+          if(currentAsset.ballastAmountTons<=0.000001) ap2.assets.splice(i,1);
+        } else {
+          const [assetRemoved]=ap2.assets.splice(i,1);
+          inv.history.unshift({...assetRemoved,removed:Date.now(),accessPointId:ap2.id,accessPointName:ap2.name,status:'Removed'});
+        }
+      });
       renderAccessDetail(state.currentPatchId,aid);
     } catch(e) { alert(e.message||'Could not remove asset from the central database.'); }
   }
@@ -527,8 +617,8 @@ window.ASSET_FINDER_CLOUD = {
   function renderApprovals(){state.currentView='admin';nav('navAdmin');const rows=state.approvals.filter(x=>x.status==='pending');$('#view').innerHTML=`<button class="back" id="adminBack">← Back to Admin</button><div class="section-title">Pending Asset Approvals <span class="pill" style="margin-left:8px">${rows.length} pending</span></div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')}</div><div class="sub">Submitted: ${esc(r.created_at ? new Date(r.created_at).toLocaleString() : '—')} · Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}</div><div class="actions"><button class="btn primary" data-approve="${esc(r.id)}">Approve</button><button class="btn danger" data-reject="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending asset approvals</b><span>New submissions will appear here automatically.</span></div>`}`;$('#adminBack').onclick=renderAdmin;document.querySelectorAll('[data-approve]').forEach(b=>b.onclick=()=>decideApproval(b.dataset.approve,'approved'));document.querySelectorAll('[data-reject]').forEach(b=>b.onclick=()=>decideApproval(b.dataset.reject,'rejected'));}
   async function decideApproval(id,status){const r=state.approvals.find(x=>String(x.id)===String(id));if(!r)return; if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');ap.assets=ap.assets||[];if(!ap.assets.some(a=>String(a.id)===String(r.asset_data?.id)))ap.assets.push(r.asset_data);});}await api(`/rest/v1/asset_approvals?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});await loadAdminData();renderApprovals();}
 
-  function renderRemovalRequests(){state.currentView='admin';nav('navAdmin');const rows=state.removalRequests.filter(x=>x.status==='pending');$('#view').innerHTML=`<button class="back" id="remBack">← Back to Admin</button><div class="section-title">Removal Requests</div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')} · ${esc(r.asset_id)}</div><div class="sub">Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}</div><div class="actions"><button class="btn primary" data-approve-removal="${esc(r.id)}">Approve</button><button class="btn danger" data-reject-removal="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending removal requests</b></div>`}`;$('#remBack').onclick=renderAdmin;document.querySelectorAll('[data-approve-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.approveRemoval,'approved'));document.querySelectorAll('[data-reject-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.rejectRemoval,'rejected'));}
-  async function decideRemoval(id,status){const r=state.removalRequests.find(x=>String(x.id)===String(id));if(!r)return;if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(r.asset_id));if(i<0)throw new Error('The asset is already gone.');const [asset]=ap.assets.splice(i,1);inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});});}await api(`/rest/v1/asset_removal_requests?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});await loadAdminData();renderRemovalRequests();}
+  function renderRemovalRequests(){state.currentView='admin';nav('navAdmin');const rows=state.removalRequests.filter(x=>x.status==='pending');$('#view').innerHTML=`<button class="back" id="remBack">← Back to Admin</button><div class="section-title">Removal Requests</div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')} · ${esc(r.asset_id)}</div><div class="sub">Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}${r.asset_data?.type==='Ballast'&&r.asset_data?._removalAmountTons?` · Remove: ${esc(r.asset_data._removalAmountTons)} t`:''}</div><div class="actions"><button class="btn primary" data-approve-removal="${esc(r.id)}">Approve</button><button class="btn danger" data-reject-removal="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending removal requests</b></div>`}`;$('#remBack').onclick=renderAdmin;document.querySelectorAll('[data-approve-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.approveRemoval,'approved'));document.querySelectorAll('[data-reject-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.rejectRemoval,'rejected'));}
+  async function decideRemoval(id,status){const r=state.removalRequests.find(x=>String(x.id)===String(id));if(!r)return;if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(r.asset_id));if(i<0)throw new Error('The asset is already gone.');const currentAsset=ap.assets[i];if(currentAsset.type==='Ballast'){const qty=Number(r.asset_data?._removalAmountTons||currentAsset.ballastAmountTons||0);const current=Number(currentAsset.ballastAmountTons||0);if(!(qty>0)||qty>current)throw new Error('Invalid ballast removal amount.');currentAsset.ballastAmountTons=Number((current-qty).toFixed(3));inv.history.unshift({...currentAsset,id:uid(),ballastAmountTons:qty,removedAmountTons:qty,originalBallastAmountTons:current,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});if(currentAsset.ballastAmountTons<=0.000001)ap.assets.splice(i,1);}else{const [asset]=ap.assets.splice(i,1);inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});}});}await api(`/rest/v1/asset_removal_requests?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});await loadAdminData();renderRemovalRequests();}
 
   function wireStatic(){
     $('#cloudLoginForm')?.addEventListener('submit',e=>{e.preventDefault();login($('#cloudCode').value,$('#cloudPassword').value);});
