@@ -351,17 +351,31 @@ window.ASSET_FINDER_CLOUD = {
     if(!base.type)return;
     let photos=[]; try{photos=await readPhotos($('#photos'));}catch(e){alert(e.message);return;}
     if(!isAdmin()){
-      try { await api('/rest/v1/asset_approvals',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:patchId,access_point_id:aid,access_point_name:patchInventory(patchId).accessPoints.find(x=>x.id===aid)?.name||'',asset_data:{...base,id:uid(),created:Date.now(),photos},requested_by:state.profile.id,status:'pending'})}); closeModal(); alert('Asset submitted for approval.'); await loadAdminData(); return; }
-    await mutateInventory(patchId,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(aid));if(!ap)throw new Error('Access point not found.');if(xid){const i=(ap.assets||[]).findIndex(z=>String(z.id)===String(xid));if(i<0)throw new Error('Asset not found.');ap.assets[i]={...ap.assets[i],...base,photos:photos.length?photos:(ap.assets[i].photos||[])};} else {ap.assets=ap.assets||[];ap.assets.push({...base,id:uid(),created:Date.now(),photos});}});
-    closeModal(); renderAccessDetail(patchId,aid);
+      try {
+        await api('/rest/v1/asset_approvals',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:patchId,access_point_id:aid,access_point_name:patchInventory(patchId).accessPoints.find(x=>x.id===aid)?.name||'',asset_data:{...base,id:uid(),created:Date.now(),photos},requested_by:state.profile.id,status:'pending'})});
+        closeModal(); alert('Asset submitted for approval.'); await loadAdminData(); return;
+      } catch(e) { alert(e.message||'Could not submit asset for approval.'); return; }
+    }
+    try {
+      await mutateInventory(patchId,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(aid));if(!ap)throw new Error('Access point not found.');if(xid){const i=(ap.assets||[]).findIndex(z=>String(z.id)===String(xid));if(i<0)throw new Error('Asset not found.');ap.assets[i]={...ap.assets[i],...base,photos:photos.length?photos:(ap.assets[i].photos||[])};} else {ap.assets=ap.assets||[];ap.assets.push({...base,id:uid(),created:Date.now(),photos});}});
+      closeModal(); renderAccessDetail(patchId,aid);
+    } catch(e) { alert(e.message||'Could not save asset to the central database.'); }
   }
 
   async function removeAsset(aid,xid){
     if(!isAdmin()){
-      try{const ap=patchInventory(state.currentPatchId).accessPoints.find(x=>x.id===aid);const asset=(ap?.assets||[]).find(x=>x.id===xid);if(!asset)throw new Error('Asset not found.');await api('/rest/v1/asset_removal_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:state.currentPatchId,access_point_id:aid,access_point_name:ap.name,asset_id:xid,asset_data:asset,requested_by:state.profile.id,status:'pending'})});alert('Removal request submitted for approval.');await loadAdminData();return;} 
+      try{
+        const ap=patchInventory(state.currentPatchId).accessPoints.find(x=>x.id===aid);const asset=(ap?.assets||[]).find(x=>x.id===xid);
+        if(!asset)throw new Error('Asset not found.');
+        await api('/rest/v1/asset_removal_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:state.currentPatchId,access_point_id:aid,access_point_name:ap.name,asset_id:xid,asset_data:asset,requested_by:state.profile.id,status:'pending'})});
+        alert('Removal request submitted for approval.');await loadAdminData();return;
+      } catch(e) { alert(e.message||'Could not submit removal request.'); return; }
+    }
     if(!confirm('Remove this asset? It will move to Past History.'))return;
-    await mutateInventory(state.currentPatchId,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(aid));if(!ap)throw new Error('Access point not found.');const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(xid));if(i<0)throw new Error('Asset not found.');const [asset]=ap.assets.splice(i,1);inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});});
-    renderAccessDetail(state.currentPatchId,aid);
+    try {
+      await mutateInventory(state.currentPatchId,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(aid));if(!ap)throw new Error('Access point not found.');const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(xid));if(i<0)throw new Error('Asset not found.');const [asset]=ap.assets.splice(i,1);inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});});
+      renderAccessDetail(state.currentPatchId,aid);
+    } catch(e) { alert(e.message||'Could not remove asset from the central database.'); }
   }
 
   async function mutateInventory(patchId, mutator){
