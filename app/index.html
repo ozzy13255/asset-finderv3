@@ -49,9 +49,9 @@ window.ASSET_FINDER_CLOUD = {
 <div style="max-width:520px;margin:7vh auto;background:#fff;border-radius:20px;padding:28px;box-shadow:0 20px 80px #0008;color:#172b3a">
 <div style="font-size:12px;font-weight:800;letter-spacing:.12em;opacity:.65">ASSET FINDER ONLINE</div>
 <h2 id="cloudGateTitle" style="margin:6px 0 8px">Sign in</h2>
-<p id="cloudGateText" style="color:#5b6770">Use the login code and password supplied by your administrator.</p>
+<p id="cloudGateText" style="color:#5b6770">Use your email address and password.</p>
 <form id="cloudLoginForm">
-<label style="display:block;font-weight:700;margin:14px 0 6px">Login code</label><input autocomplete="username" id="cloudCode" required="" style="width:100%;box-sizing:border-box;padding:13px;border:1px solid #ccd3d8;border-radius:10px"/>
+<label style="display:block;font-weight:700;margin:14px 0 6px">Email address</label><input autocomplete="username" type="email" id="cloudCode" required="" style="width:100%;box-sizing:border-box;padding:13px;border:1px solid #ccd3d8;border-radius:10px"/>
 <label style="display:block;font-weight:700;margin:14px 0 6px">Password</label><input autocomplete="current-password" id="cloudPassword" required="" style="width:100%;box-sizing:border-box;padding:13px;border:1px solid #ccd3d8;border-radius:10px" type="password"/>
 <button class="btn primary" style="width:100%;margin-top:18px" type="submit">Sign in</button>
 <div id="cloudLoginError" style="color:#9d1c1c;margin-top:12px;font-weight:600"></div>
@@ -200,8 +200,10 @@ window.ASSET_FINDER_CLOUD = {
     setLoginError('');
     const btn = $('#cloudLoginForm button[type=submit]'); if (btn) { btn.disabled=true; btn.textContent='Signing in…'; }
     try {
-      let email = syntheticEmail(code);
-      try { const r = await edge('account-recovery',{action:'resolve_login',login_code:code},false); if (r?.email) email=r.email; } catch {}
+      let email = String(code||'').trim().toLowerCase();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        try { const r = await edge('account-recovery',{action:'resolve_login',login_code:code},false); if (r?.email) email=r.email; } catch {}
+      }
       const token = await api('/auth/v1/token?grant_type=password', { method:'POST', body:JSON.stringify({ email, password }) });
       state.session = token;
       state.user = token.user;
@@ -256,13 +258,13 @@ window.ASSET_FINDER_CLOUD = {
     state.session=null; state.user=null; state.profile=null; state.patches=[]; state.inventories=new Map(); state.users=[]; state.assignments=[]; state.approvals=[]; state.removalRequests=[];
     document.getElementById('afAccountBar')?.remove();
     const lf=$('#cloudLoginForm'), cf=$('#cloudChangeForm'), title=$('#cloudGateTitle'), text=$('#cloudGateText');
-    if(lf)lf.style.display='block'; if(cf)cf.style.display='none'; if(title)title.textContent='Sign in'; if(text)text.textContent='Use your login code and password.';
+    if(lf)lf.style.display='block'; if(cf)cf.style.display='none'; if(title)title.textContent='Sign in'; if(text)text.textContent='Use your email address and password.';
     setLoginError(''); setGate(true);
   }
   window.assetFinderLogout=logout;
 
   async function recoverPassword(){
-    const code = prompt('Enter your login code. We will send a reset link to your recovery email.'); if (code===null) return;
+    const code = prompt('Enter your login & recovery email address. We will send a reset link to that email.'); if (code===null) return;
     try { await edge('account-recovery',{action:'send_reset',login_code:code,redirect_to:location.origin+location.pathname},false); alert('A password reset email has been requested. Check your recovery email.'); }
     catch(e){ alert(e.message||'Could not request a password reset.'); }
   }
@@ -435,12 +437,12 @@ window.ASSET_FINDER_CLOUD = {
       <div class="field"><label>SC Number *</label><input id="asc" value="${esc(x.sc||'')}" required></div>
       <div class="field"><label>Description</label><input id="adesc" value="${esc(x.description||'')}"></div>`;
     if(type==='Rail') return common + `
-      <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','RH','LH','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
-      <div class="field"><label>Rail Length (m) *</label><input id="railLength" inputmode="decimal" value="${esc(x.railLength||'')}" required></div>
+      <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Rail Length *</label><div style="display:grid;grid-template-columns:1fr 120px;gap:8px"><input id="railLength" inputmode="decimal" value="${esc(x.railLength||'')}" required><select id="railLengthUnit" required><option value="m" ${(!x.railLengthUnit||x.railLengthUnit==='m')?'selected':''}>m</option><option value="ft" ${x.railLengthUnit==='ft'?'selected':''}>ft</option><option value="mm" ${x.railLengthUnit==='mm'?'selected':''}>mm</option></select></div></div>
       <div class="field"><label>Rail Weight (kg/m) *</label><input id="railWeight" inputmode="decimal" value="${esc(x.railWeight||'')}" required></div>`;
     if(type==='Switch') return common + `
       <div class="field"><label>Point Number *</label><input id="apoints" value="${esc(x.points||'')}" required></div>
-      <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','RH','LH','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
       <div class="field full"><label>Hand / Set *</label><div class="choice-row"><label><input type="radio" name="switchHand" value="Left hand" ${x.switchHand==='Left hand'?'checked':''}> Left hand</label><label><input type="radio" name="switchHand" value="Right hand" ${x.switchHand==='Right hand'?'checked':''}> Right hand</label><label><input type="radio" name="switchHand" value="Full set" ${(!x.switchHand||x.switchHand==='Full set')?'checked':''}> Full set</label></div></div>
       <div class="field"><label>Stock Length (m) *</label><input id="stockLength" inputmode="decimal" value="${esc(x.stockLength||'')}" required></div>
       <div class="field"><label>Switch Length (m) *</label><input id="switchLength" inputmode="decimal" value="${esc(x.switchLength||'')}" required></div>
@@ -451,9 +453,9 @@ window.ASSET_FINDER_CLOUD = {
       <div class="field"><label>Rail Weight (kg/m) *</label><input id="railWeight" inputmode="decimal" value="${esc(x.railWeight||'')}" required></div>
       <div class="field full"><div class="notice"><b>Crossing dimensions</b><br>Dimension fields will be added once the crossing order-form sketch is provided.</div></div>`;
     if(type==='IRJ') return common + `
-      <div class="field"><label>Rail Length (m) *</label><input id="railLength" inputmode="decimal" value="${esc(x.railLength||'')}" required></div>
-      <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','RH','LH','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
-      <div class="field"><label>IRJ Type *</label><input id="irjType" value="${esc(x.irjType||'')}" placeholder="Enter IRJ type" required></div>`;
+      <div class="field"><label>Rail Length *</label><div style="display:grid;grid-template-columns:1fr 120px;gap:8px"><input id="railLength" inputmode="decimal" value="${esc(x.railLength||'')}" required><select id="railLengthUnit" required><option value="m" ${(!x.railLengthUnit||x.railLengthUnit==='m')?'selected':''}>m</option><option value="ft" ${x.railLengthUnit==='ft'?'selected':''}>ft</option><option value="mm" ${x.railLengthUnit==='mm'?'selected':''}>mm</option></select></div></div>
+      <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>IRJ Type *</label><select id="irjType" required><option value="">Select IRJ type</option>${['4 Hole Glued','4 Hole Manufactured','6 Hole Glued','6 Hole Manufactured'].map(t=>`<option value="${t}" ${x.irjType===t?'selected':''}>${t}</option>`).join('')}</select></div>`;
     if(type==='Ballast') return `<div class="field full"><label>Amount (tonnes) *</label><input id="ballastAmountTons" inputmode="decimal" value="${esc(x.ballastAmountTons??'')}" min="0" step="0.01" placeholder="e.g. 10" required></div>`;
     if(type==='Miscellaneous') return `
       <div class="field full"><label>What is the asset? *</label><textarea id="miscDetails" required>${esc(x.miscDetails||'')}</textarea></div>`;
@@ -463,13 +465,13 @@ window.ASSET_FINDER_CLOUD = {
   function readAssetDynamicFields(){
     const type=$('#atype')?.value||'';
     const get=v=>document.querySelector(v)?.value?.trim()||'';
-    const data={type,sc:get('#asc'),description:get('#adesc'),points:get('#apoints'),railType:get('#arail'),railLength:get('#railLength'),railWeight:get('#railWeight'),switchHand:document.querySelector('input[name="switchHand"]:checked')?.value||'',stockLength:get('#stockLength'),switchLength:get('#switchLength'),switchType:get('#switchType'),crossingType:get('#crossingType'),irjType:get('#irjType'),ballastAmountTons:get('#ballastAmountTons'),miscDetails:get('#miscDetails')};
+    const data={type,sc:get('#asc'),description:get('#adesc'),points:get('#apoints'),railType:get('#arail'),railLength:get('#railLength'),railLengthUnit:get('#railLengthUnit'),railWeight:get('#railWeight'),switchHand:document.querySelector('input[name="switchHand"]:checked')?.value||'',stockLength:get('#stockLength'),switchLength:get('#switchLength'),switchType:get('#switchType'),crossingType:get('#crossingType'),irjType:get('#irjType'),ballastAmountTons:get('#ballastAmountTons'),miscDetails:get('#miscDetails')};
     if(!type) throw new Error('Please select an asset type.');
     if(type!=='Ballast' && type!=='Miscellaneous' && !data.sc) throw new Error('SC number is required.');
     if(type==='Switch' && (!data.points||!data.railType||!data.switchHand||!data.stockLength||!data.switchLength||!data.switchType)) throw new Error('Please complete all Switch fields.');
-    if(type==='Rail' && (!data.railType||!data.railLength||!data.railWeight)) throw new Error('Please complete all Rail fields.');
+    if(type==='Rail' && (!data.railType||!data.railLength||!data.railLengthUnit||!data.railWeight)) throw new Error('Please complete all Rail fields.');
     if(type==='Crossing' && (!data.points||!data.crossingType||!data.railWeight)) throw new Error('Please complete all Crossing fields.');
-    if(type==='IRJ' && (!data.railLength||!data.railType||!data.irjType)) throw new Error('Please complete all IRJ fields.');
+    if(type==='IRJ' && (!data.railLength||!data.railLengthUnit||!data.railType||!data.irjType)) throw new Error('Please complete all IRJ fields.');
     if(type==='Ballast' && !(Number(data.ballastAmountTons)>0)) throw new Error('Ballast amount must be greater than 0 tonnes.');
     if(type==='Miscellaneous' && !data.miscDetails) throw new Error('Please describe the miscellaneous asset.');
     if(type==='Ballast') data.ballastAmountTons=Number(data.ballastAmountTons);
@@ -574,11 +576,32 @@ window.ASSET_FINDER_CLOUD = {
 
   function renderProfile(){
     state.currentView='profile'; nav('navSettings'); const p=state.profile;
-    $('#view').innerHTML=`<div class="card"><div class="title">Profile</div><div class="form two"><div class="field"><label>Name</label><input value="${esc(p.name)}" disabled class="immutable"></div><div class="field"><label>Employee Number</label><input value="${esc(p.employee_number)}" disabled class="immutable"></div><div class="field"><label>Login Code</label><input value="${esc(p.login_code)}" disabled class="immutable"></div><div class="field"><label>Role</label><input value="${esc(roleLabel(p.role))}" disabled class="immutable"></div><div class="field full"><label>Recovery Email</label><input id="recoveryEmail" type="email" value="${esc(p.recovery_email||'')}" placeholder="name@example.com"><button class="btn secondary" id="saveRecovery" style="margin-top:8px">Save Recovery Email</button><div class="small">Saving a recovery email also updates the account email used behind your login code.</div></div><div class="field full"><label>Profile Photo</label><input id="profilePhoto" type="file" accept="image/*"><div class="small">Profile photo is stored centrally in your profile.</div></div><div class="field"><label>New Password</label><input id="newPw" type="password" minlength="10"></div><div class="field"><label>Confirm New Password</label><input id="newPw2" type="password" minlength="10"></div><div class="actions full"><button class="btn primary" id="savePw">Change Password</button></div></div></div>`;
-    $('#saveRecovery').onclick=saveRecovery; $('#profilePhoto').onchange=saveProfilePhoto; $('#savePw').onclick=savePassword;
+    $('#view').innerHTML=`<div class="card"><div class="title">Profile</div><div class="form two"><div class="field"><label>Name</label><input value="${esc(p.name)}" disabled class="immutable"></div><div class="field"><label>Employee Number</label><input value="${esc(p.employee_number)}" disabled class="immutable"></div><div class="field"><label>Role</label><input value="${esc(roleLabel(p.role))}" disabled class="immutable"></div><div class="field full"><label>Login & Recovery Email</label><input id="loginRecoveryEmail" type="email" autocomplete="email" value="${esc(p.login_code||'')}" placeholder="name@example.com"><button class="btn secondary" id="saveLoginRecovery" type="button" style="margin-top:8px">Save Email Address</button><div class="small">This single email address is used for signing in and password recovery.</div></div><div class="field full"><label>Profile Photo</label><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><div id="profilePhotoPreview" style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#e8edf1;display:flex;align-items:center;justify-content:center;font-weight:800;color:#6b7785">${p.profile_photo_data_url?`<img src="${esc(p.profile_photo_data_url)}" alt="Profile photo" style="width:100%;height:100%;object-fit:cover">`:'Photo'}</div><input id="profilePhoto" type="file" accept="image/*"><button type="button" class="btn secondary" id="removeProfilePhoto" ${p.profile_photo_data_url?'':'disabled'}>Remove photo</button></div><div class="small">Choose an image; it is resized and stored centrally in your profile.</div></div><div class="field"><label>New Password</label><input id="newPw" type="password" minlength="10"></div><div class="field"><label>Confirm New Password</label><input id="newPw2" type="password" minlength="10"></div><div class="actions full"><button class="btn primary" id="savePw">Change Password</button></div></div></div>`;
+    $('#saveLoginRecovery').onclick=saveLoginRecovery; $('#profilePhoto').onchange=saveProfilePhoto; $('#removeProfilePhoto').onclick=removeProfilePhoto; $('#savePw').onclick=savePassword;
   }
-  async function saveRecovery(){try{const email=$('#recoveryEmail').value.trim();await edge('account-recovery',{action:'set_recovery_email',email},true);await loadProfile();renderProfile();alert('Recovery email saved.');}catch(e){alert(e.message);}}
-  async function saveProfilePhoto(){const f=$('#profilePhoto').files?.[0];if(!f)return;if(f.size>2_000_000){alert('Photo must be 2 MB or smaller.');return;}const data=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result));r.onerror=rej;r.readAsDataURL(f)});try{await api(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.profile.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({profile_photo_data_url:data})});await loadProfile();renderProfile();}catch(e){alert(e.message);}}
+  async function saveLoginRecovery(){
+    try{
+      const email=String($('#loginRecoveryEmail')?.value||'').trim().toLowerCase();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert('Please enter a valid email address.');
+      await edge('account-recovery',{action:'set_recovery_email',email},true);
+      await loadProfile(); renderProfile(); alert('Login and recovery email updated.');
+    }catch(e){alert(e.message||'Could not update email address.');}
+  }
+  async function saveRecovery(){ return; }
+  async function removeProfilePhoto(){try{await api(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.profile.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({profile_photo_data_url:null})});await loadProfile();renderProfile();}catch(e){alert(e.message);}}
+  async function saveProfilePhoto(){
+    const f=$('#profilePhoto').files?.[0]; if(!f)return;
+    if(!f.type.startsWith('image/')) return alert('Please choose an image file.');
+    try{
+      const data=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>{const img=new Image();img.onload=()=>{const max=256;const scale=Math.min(1,max/Math.max(img.width,img.height));const w=Math.max(1,Math.round(img.width*scale));const h=Math.max(1,Math.round(img.height*scale));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',0.82));};img.onerror=reject;img.src=String(reader.result);};reader.onerror=reject;reader.readAsDataURL(f);
+      });
+      if(String(data).length>700000) return alert('This photo could not be compressed enough. Please choose a smaller image.');
+      await api(`/rest/v1/profiles?id=eq.${encodeURIComponent(state.profile.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({profile_photo_data_url:data})});
+      await loadProfile(); renderProfile();
+    }catch(e){alert(e.message||'Could not save profile photo.');}
+  }
   async function savePassword(){const a=$('#newPw').value,b=$('#newPw2').value;if(a.length<10)return alert('Password must be at least 10 characters.');if(a!==b)return alert('Passwords do not match.');try{await api('/auth/v1/user',{method:'PUT',body:JSON.stringify({password:a})});alert('Password changed.');$('#newPw').value='';$('#newPw2').value='';}catch(e){alert(e.message);}}
 
   async function createPatch(){if(!isOwner())return alert('Only the Owner can create patches.');const name=prompt('Patch name:');if(name===null)return;const clean=name.trim();if(!clean)return;const id=clean.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48)+'-'+Date.now().toString(36);await api('/rest/v1/patches',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id,name:clean})});try{await api('/rest/v1/patch_inventories',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:id,patch_name:clean,inventory:{accessPoints:[],history:[]}})});}catch(e){await api(`/rest/v1/patches?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});throw e;}await reload();}
@@ -590,6 +613,7 @@ window.ASSET_FINDER_CLOUD = {
     const form=$('#createUserForm'); if(!form)return;
     const fd=new FormData(form); const body={name:String(fd.get('name')||'').trim(),employee_number:String(fd.get('employee_number')||'').trim(),login_code:String(fd.get('login_code')||'').trim(),password:String(fd.get('password')||''),role:String(fd.get('role')||'user'),patch_id:String(fd.get('patch_id')||'')};
     if(!body.name||!body.employee_number||!body.login_code||body.password.length<10||!body.patch_id)return alert('Complete all fields. Temporary password must be at least 10 characters.');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.login_code))return alert('Login & Recovery Email must be a valid email address.');
     if(!isOwner())body.role='user';
     try{const r=await edge('admin-create-user',body,true);alert(`User created: ${r.name} (${r.login_code})`);await loadAdminData();renderAdmin();}catch(e){alert(e.message||'Could not create user.');}
   }
@@ -599,10 +623,10 @@ window.ASSET_FINDER_CLOUD = {
   function renderAdmin(){
     state.currentView='admin'; nav('navAdmin');
     const patchOptions=state.patches.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
-    const userRows=state.users.filter(u=>u.id!==state.profile.id).map(u=>{const patchIds=state.assignments.filter(a=>a.user_id===u.id).map(a=>a.patch_id);const patches=patchIds.map(id=>state.patches.find(p=>p.id===id)?.name||id).join(', ')||'—';const canDelete=isOwner()?u.role!=='owner':(u.role==='user'&&patchIds.some(id=>state.patches.some(p=>p.id===id)));return `<div class="card"><div class="cardhead"><div><div class="title">${esc(u.name)} · ${esc(roleLabel(u.role))}</div><div class="sub">Employee: ${esc(u.employee_number)} · Login: ${esc(u.login_code)}</div><div class="sub">Patch: ${esc(patches)} · Status: ${esc(u.status)}</div></div><div class="actions">${canDelete?`<button class="btn danger" data-delete-user="${esc(u.id)}">Delete</button>`:''}</div></div></div>`;}).join('');
+    const userRows=state.users.filter(u=>u.id!==state.profile.id).map(u=>{const patchIds=state.assignments.filter(a=>a.user_id===u.id).map(a=>a.patch_id);const patches=patchIds.map(id=>state.patches.find(p=>p.id===id)?.name||id).join(', ')||'—';const canDelete=isOwner()?u.role!=='owner':(u.role==='user'&&patchIds.some(id=>state.patches.some(p=>p.id===id)));return `<div class="card"><div class="cardhead"><div><div class="title">${esc(u.name)} · ${esc(roleLabel(u.role))}</div><div class="sub">Employee: ${esc(u.employee_number)} · Email: ${esc(u.login_code)}</div><div class="sub">Patch: ${esc(patches)} · Status: ${esc(u.status)}</div></div><div class="actions">${canDelete?`<button class="btn danger" data-delete-user="${esc(u.id)}">Delete</button>`:''}</div></div></div>`;}).join('');
     $('#view').innerHTML=`<div class="card"><div class="title">Patch Administration</div><div class="actions" style="margin-top:10px">${isOwner()?'<button class="btn primary" id="createPatchBtn">＋ Create Patch</button>':''}<button class="btn secondary" id="approvalsBtn">Pending Asset Approvals</button><button class="btn secondary" id="removalsBtn">Removal Requests</button></div></div>
       ${isOwner()?`<div class="card"><div class="title">Patch Management</div>${state.patches.map(p=>`<div class="cardhead" style="margin-top:8px"><div><b>${esc(p.name)}</b></div><div class="actions"><button class="btn light" data-rename-patch="${esc(p.id)}">Rename</button><button class="btn danger" data-delete-patch="${esc(p.id)}">Delete</button></div></div>`).join('')}</div>`:''}
-      <div class="card"><div class="title">Create User</div><form id="createUserForm" class="form two"><div class="field"><label>Name *</label><input name="name" required></div><div class="field"><label>Employee Number *</label><input name="employee_number" required></div><div class="field"><label>Login Code *</label><input name="login_code" required></div><div class="field"><label>Temporary Password *</label><input name="password" minlength="10" required></div><div class="field"><label>Role</label><select name="role" ${isOwner()?'':'disabled'}><option value="user">User</option>${isOwner()?'<option value="patch_admin">Patch Admin</option>':''}</select></div><div class="field"><label>Patch *</label><select name="patch_id" required>${patchOptions}</select></div><div class="actions full"><button class="btn primary">Create User</button></div></form></div>
+      <div class="card"><div class="title">Create User</div><form id="createUserForm" class="form two"><div class="field"><label>Name *</label><input name="name" required></div><div class="field"><label>Employee Number *</label><input name="employee_number" required></div><div class="field"><label>Email Address (Login & Recovery) *</label><input name="login_code" type="email" autocomplete="email" required></div><div class="field"><label>Temporary Password *</label><input name="password" minlength="10" required></div><div class="field"><label>Role</label><select name="role" ${isOwner()?'':'disabled'}><option value="user">User</option>${isOwner()?'<option value="patch_admin">Patch Admin</option>':''}</select></div><div class="field"><label>Patch *</label><select name="patch_id" required>${patchOptions}</select></div><div class="actions full"><button class="btn primary">Create User</button></div></form></div>
       <div><div class="section-title">Users</div>${userRows||'<div class="card empty"><b>No other users</b></div>'}</div>`;
     $('#createPatchBtn')?.addEventListener('click',()=>createPatch().catch(e=>alert(e.message)));
     $('#approvalsBtn').onclick=()=>openApprovals().catch(e=>alert(e.message));

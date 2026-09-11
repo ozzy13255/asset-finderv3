@@ -1,21 +1,11 @@
-# Asset Finder v3.0 — deployment
+# Asset Finder v3.1 — deployment
 
-## GitHub
-Repository: `ozzy13255/asset-finder-v3`
+Replace the repository contents with this build and deploy `app` with Vercel.
 
-## Vercel
-- Application Preset: Other
-- Root Directory: `app`
-- No build command required for the static app.
+## Current changes
+- Email address is the Login & Recovery identity for newly created accounts.
+- Rail length supports ft, m and mm for Rail and IRJ assets.
+- IRJ type is a controlled dropdown.
+- Profile photos are resized before central storage and can be removed.
 
-## Supabase
-Project ID: `qajpyjdeozydtzdcxhqd`
-
-Required Edge Functions:
-- `admin-create-user`
-- `admin-delete-user`
-- `account-recovery`
-- `bootstrap-owner`
-
-## Important
-The `app/index.html` in v3.0 contains no browser localStorage/sessionStorage code. Application records are loaded from and written to Supabase only.
+Existing legacy accounts may still have their old login code until their login email is updated.
