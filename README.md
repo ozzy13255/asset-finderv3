@@ -7,3 +7,6 @@ Centralised railway asset management application. Inventory, approvals, removals
 - Password-reset flow with secure recovery link and new-password screen.
 - Mobile header collapses while scrolling down and returns when scrolling up.
 - Live approval/removal counters and sync/version status retained.
+
+
+Version 3.3.4: mobile recovery UI, login validation and header-scroll refinement.

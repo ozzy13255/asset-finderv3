@@ -17,18 +17,21 @@ Deno.serve(async(req)=>{
       return json({email:u.user.email||p.recovery_email||p.login_code});
     }
     if(action==="send_reset"){
-      const supplied=String(body?.login_code||"").trim().toLowerCase(); const redirect=String(body?.redirect_to||"").trim();
+      const supplied=String(body?.login_code||"").trim().toLowerCase();
+      const redirect=String(body?.redirect_to||"").trim();
       if(!supplied)return json({error:"Email address is required."},400);
       let email=supplied;
       if(!emailRe.test(email)){
         const {data:p,error}=await admin.from("profiles").select("id,status,recovery_email,login_code").ilike("login_code",supplied).maybeSingle();
-        if(error)return json({error:error.message},500); if(!p||p.status!=="active")return json({error:"Account unavailable."},404);
+        if(error)return json({error:error.message},500);
+        if(!p||p.status!=="active")return json({error:"Account unavailable."},404);
         email=String(p.recovery_email||p.login_code||"").trim().toLowerCase();
       }
       if(!emailRe.test(email))return json({error:"A valid login & recovery email is required."},400);
-      if(redirect){ const first=await admin.auth.resetPasswordForEmail(email,{redirectTo:redirect}); if(!first.error)return json({ok:true}); }
-      const retry=await admin.auth.resetPasswordForEmail(email); if(retry.error)return json({error:retry.error.message},400);
-      return json({ok:true,email});
+      const options=redirect?{redirectTo:redirect}:undefined;
+      const {error:resetError}=await admin.auth.resetPasswordForEmail(email, options as any);
+      if(resetError)return json({error:resetError.message},400);
+      return json({ok:true,message:"Reset email request accepted.",email});
     }
     const token=(req.headers.get("Authorization")||"").replace(/^Bearer\s+/i,""); if(!token)return json({error:"Missing authorization."},401);
     const {data:{user:caller}}=await admin.auth.getUser(token); if(!caller)return json({error:"Unauthorized."},401);
