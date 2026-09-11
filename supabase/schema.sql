@@ -8,7 +8,9 @@ create table if not exists public.profiles (
   role text not null check (role in ('owner','patch_admin','user')),
   status text not null default 'active' check (status in ('active','suspended','disabled')),
   must_change_password boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  recovery_email text,
+  profile_photo_data_url text
 );
 
 create table if not exists public.patches (
@@ -20,7 +22,7 @@ create table if not exists public.patches (
 create table if not exists public.user_patches (
   user_id uuid not null references public.profiles(id) on delete cascade,
   patch_id text not null references public.patches(id) on delete cascade,
-  primary key (user_id, patch_id)
+  primary key (user_id,patch_id)
 );
 
 create table if not exists public.patch_inventories (
@@ -30,92 +32,134 @@ create table if not exists public.patch_inventories (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.asset_approvals (
+  id uuid primary key default gen_random_uuid(),
+  patch_id text not null references public.patches(id) on delete cascade,
+  access_point_id text not null,
+  access_point_name text not null,
+  asset_data jsonb not null,
+  requested_by uuid not null references public.profiles(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  reviewed_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+
+create table if not exists public.asset_removal_requests (
+  id uuid primary key default gen_random_uuid(),
+  patch_id text not null references public.patches(id) on delete cascade,
+  access_point_id text not null,
+  access_point_name text not null,
+  asset_id text not null,
+  asset_data jsonb not null,
+  requested_by uuid not null references public.profiles(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  reviewed_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+
 create index if not exists user_patches_user_idx on public.user_patches(user_id);
 create index if not exists user_patches_patch_idx on public.user_patches(patch_id);
+create index if not exists asset_approvals_patch_idx on public.asset_approvals(patch_id);
+create index if not exists asset_removal_requests_patch_idx on public.asset_removal_requests(patch_id);
 
 create or replace function public.current_role()
 returns text language sql stable security definer set search_path=public
 as $$ select role from public.profiles where id=auth.uid() $$;
 
-create or replace function public.can_access_patch(p_patch_id text)
+create or replace function public.user_has_patch(p_user_id uuid,p_patch_id text)
+returns boolean language sql stable security definer set search_path=public
+as $$ select exists(select 1 from public.user_patches where user_id=p_user_id and patch_id=p_patch_id) $$;
+
+create or replace function public.user_shares_patch_with(p_target_user_id uuid)
 returns boolean language sql stable security definer set search_path=public
 as $$
-  select public.current_role()='owner'
-      or exists (select 1 from public.user_patches up where up.user_id=auth.uid() and up.patch_id=p_patch_id);
+  select exists(
+    select 1 from public.user_patches mine join public.user_patches target on target.patch_id=mine.patch_id
+    where mine.user_id=auth.uid() and target.user_id=p_target_user_id
+  )
 $$;
+
+create or replace function public.can_access_patch(p_patch_id text)
+returns boolean language sql stable security definer set search_path=public
+as $$ select public.current_role()='owner' or public.user_has_patch(auth.uid(),p_patch_id) $$;
+
+create or replace function public.lock_profile_identity()
+returns trigger language plpgsql security definer set search_path=public
+as $$
+begin
+  if auth.uid()=old.id and public.current_role()<>'owner' then
+    new.name:=old.name; new.employee_number:=old.employee_number; new.login_code:=old.login_code; new.role:=old.role; new.status:=old.status;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists profile_identity_lock on public.profiles;
+create trigger profile_identity_lock before update on public.profiles for each row execute function public.lock_profile_identity();
+
+create or replace function public.touch_inventory()
+returns trigger language plpgsql set search_path=public
+as $$ begin new.updated_at=now(); return new; end; $$;
+
+drop trigger if exists patch_inventory_touch on public.patch_inventories;
+create trigger patch_inventory_touch before update on public.patch_inventories for each row execute function public.touch_inventory();
 
 alter table public.profiles enable row level security;
 alter table public.patches enable row level security;
 alter table public.user_patches enable row level security;
 alter table public.patch_inventories enable row level security;
+alter table public.asset_approvals enable row level security;
+alter table public.asset_removal_requests enable row level security;
 
--- Profiles: users can read their own immutable identity/role fields; owner can administer all.
-drop policy if exists profiles_select_self_or_owner on public.profiles;
-drop policy if exists profiles_select_self_owner_or_patch_admin on public.profiles;
-create policy profiles_select_self_owner_or_patch_admin on public.profiles
-for select using (
-  id=auth.uid()
-  or public.current_role()='owner'
-  or (public.current_role()='patch_admin' and exists (
-    select 1 from public.user_patches mine
-    join public.user_patches target on target.patch_id=mine.patch_id
-    where mine.user_id=auth.uid() and target.user_id=profiles.id
-  ))
+-- Profiles
+ drop policy if exists profiles_select_self_owner_or_patch_admin on public.profiles;
+create policy profiles_select_self_owner_or_patch_admin on public.profiles for select using (
+ id=auth.uid() or public.current_role()='owner' or (public.current_role()='patch_admin' and public.user_shares_patch_with(id))
 );
-
 drop policy if exists profiles_update_owner on public.profiles;
 create policy profiles_update_owner on public.profiles for update using (public.current_role()='owner') with check (public.current_role()='owner');
+drop policy if exists profiles_update_self on public.profiles;
+create policy profiles_update_self on public.profiles for update using (id=auth.uid()) with check (id=auth.uid());
 
--- Patch list: owner sees all; others see only assigned patches.
+-- Patches
 drop policy if exists patches_select_allowed on public.patches;
 create policy patches_select_allowed on public.patches for select using (public.can_access_patch(id));
-
 drop policy if exists patches_owner_write on public.patches;
 create policy patches_owner_write on public.patches for all using (public.current_role()='owner') with check (public.current_role()='owner');
 
--- Assignments: users see their own; owner sees all. Writes are performed by the protected admin function.
+-- User patch assignments
 drop policy if exists user_patches_select on public.user_patches;
-create policy user_patches_select on public.user_patches
-for select using (
-  user_id=auth.uid()
-  or public.current_role()='owner'
-  or (public.current_role()='patch_admin' and exists (
-    select 1 from public.user_patches mine
-    where mine.user_id=auth.uid() and mine.patch_id=user_patches.patch_id
-  ))
+create policy user_patches_select on public.user_patches for select using (
+ user_id=auth.uid() or public.current_role()='owner' or (public.current_role()='patch_admin' and public.user_has_patch(auth.uid(),patch_id))
 );
 drop policy if exists user_patches_owner_write on public.user_patches;
 create policy user_patches_owner_write on public.user_patches for all using (public.current_role()='owner') with check (public.current_role()='owner');
 
--- Inventory is the hard security boundary. Patch admins/users can access only their patch; owner can access all.
+-- Inventory
 drop policy if exists inventories_select_allowed on public.patch_inventories;
 create policy inventories_select_allowed on public.patch_inventories for select using (public.can_access_patch(patch_id));
-drop policy if exists inventories_insert_allowed on public.patch_inventories;
-create policy inventories_insert_allowed on public.patch_inventories for insert with check (public.can_access_patch(patch_id));
-drop policy if exists inventories_update_allowed on public.patch_inventories;
-create policy inventories_update_allowed on public.patch_inventories for update using (public.can_access_patch(patch_id)) with check (public.can_access_patch(patch_id));
-drop policy if exists inventories_delete_owner on public.patch_inventories;
-create policy inventories_delete_owner on public.patch_inventories for delete using (public.current_role()='owner');
+drop policy if exists inventories_insert_admin_only on public.patch_inventories;
+create policy inventories_insert_admin_only on public.patch_inventories for insert with check (public.current_role() in ('owner','patch_admin') and public.can_access_patch(patch_id));
+drop policy if exists inventories_update_admin_only on public.patch_inventories;
+create policy inventories_update_admin_only on public.patch_inventories for update using (public.current_role() in ('owner','patch_admin') and public.can_access_patch(patch_id)) with check (public.current_role() in ('owner','patch_admin') and public.can_access_patch(patch_id));
+drop policy if exists inventories_delete_owner_only on public.patch_inventories;
+create policy inventories_delete_owner_only on public.patch_inventories for delete using (public.current_role()='owner');
 
-create or replace function public.touch_inventory()
-returns trigger language plpgsql as $$ begin new.updated_at=now(); return new; end; $$;
-drop trigger if exists patch_inventory_touch on public.patch_inventories;
-create trigger patch_inventory_touch before update on public.patch_inventories for each row execute function public.touch_inventory();
+-- Asset approvals
+drop policy if exists approvals_select on public.asset_approvals;
+create policy approvals_select on public.asset_approvals for select using (requested_by=auth.uid() or public.current_role()='owner' or (public.current_role()='patch_admin' and public.can_access_patch(patch_id)));
+drop policy if exists approvals_insert on public.asset_approvals;
+create policy approvals_insert on public.asset_approvals for insert with check (public.current_role()='user' and requested_by=auth.uid() and public.can_access_patch(patch_id) and status='pending');
+drop policy if exists approvals_update on public.asset_approvals;
+create policy approvals_update on public.asset_approvals for update using (public.current_role()='owner' or (public.current_role()='patch_admin' and public.can_access_patch(patch_id))) with check (public.current_role()='owner' or (public.current_role()='patch_admin' and public.can_access_patch(patch_id)));
+drop policy if exists approvals_delete on public.asset_approvals;
+create policy approvals_delete on public.asset_approvals for delete using (public.current_role()='owner');
 
--- Prevent non-owner users from changing their name, employee number, login code or role directly.
-create or replace function public.lock_profile_identity()
-returns trigger language plpgsql security definer set search_path=public as $$
-begin
-  if auth.uid() = old.id and public.current_role() <> 'owner' then
-    new.name := old.name;
-    new.employee_number := old.employee_number;
-    new.login_code := old.login_code;
-    new.role := old.role;
-    new.status := old.status;
-  end if;
-  return new;
-end; $$;
-drop trigger if exists profile_identity_lock on public.profiles;
-create trigger profile_identity_lock before update on public.profiles for each row execute function public.lock_profile_identity();
-
--- Storage/object permissions are intentionally not included: photos can remain in the app's local record initially.
+-- Asset removal requests
+drop policy if exists asset_removal_select_allowed on public.asset_removal_requests;
+create policy asset_removal_select_allowed on public.asset_removal_requests for select using (public.can_access_patch(patch_id));
+drop policy if exists asset_removal_user_insert on public.asset_removal_requests;
+create policy asset_removal_user_insert on public.asset_removal_requests for insert with check (requested_by=auth.uid() and public.current_role()='user' and public.can_access_patch(patch_id));
+drop policy if exists asset_removal_admin_update on public.asset_removal_requests;
+create policy asset_removal_admin_update on public.asset_removal_requests for update using (public.current_role() in ('owner','patch_admin') and public.can_access_patch(patch_id)) with check (public.current_role() in ('owner','patch_admin') and public.can_access_patch(patch_id));

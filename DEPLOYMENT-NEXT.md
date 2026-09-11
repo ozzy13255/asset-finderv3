@@ -1,21 +1,21 @@
-# Deployment checklist
+# Asset Finder v3.0 — deployment
 
-- [ ] Create Supabase project
-- [ ] Run schema.sql
-- [ ] Deploy bootstrap-owner
-- [ ] Set BOOTSTRAP_SECRET
-- [ ] Create Owner account
-- [ ] Deploy admin-create-user
-- [ ] Configure app URL + anon key
-- [ ] Enable online mode
-- [ ] Complete cloud CRUD migration for every existing Asset Finder action
-- [x] Add Owner/Patch Admin panel
-- [x] Add Patch Admin user creation screen
-- [ ] Add account suspension/reset controls
-- [ ] Add audit log
-- [ ] Add cloud photo storage with patch-scoped policies
-- [ ] Test patch isolation with two separate test accounts
-- [ ] Test owner cross-patch access
-- [ ] Test suspended account rejection
-- [ ] Test forced first-login password change
-- [ ] Production HTTPS/domain
+## GitHub
+Repository: `ozzy13255/asset-finder-v3`
+
+## Vercel
+- Application Preset: Other
+- Root Directory: `app`
+- No build command required for the static app.
+
+## Supabase
+Project ID: `qajpyjdeozydtzdcxhqd`
+
+Required Edge Functions:
+- `admin-create-user`
+- `admin-delete-user`
+- `account-recovery`
+- `bootstrap-owner`
+
+## Important
+The `app/index.html` in v3.0 contains no browser localStorage/sessionStorage code. Application records are loaded from and written to Supabase only.

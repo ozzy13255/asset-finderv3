@@ -1,15 +1,9 @@
 {
-  "name": "Asset Finder \u2014 v2.7.5",
+  "name": "Asset Finder — v3.0",
   "short_name": "Asset Finder",
-  "start_url": "./index.html?v=2.7.5",
+  "start_url": "./index.html?v=3.0",
   "display": "standalone",
   "background_color": "#071a35",
   "theme_color": "#071a35",
-  "icons": [
-    {
-      "src": "icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+  "icons": [{"src":"icon.png","sizes":"512x512","type":"image/png"}]
 }
