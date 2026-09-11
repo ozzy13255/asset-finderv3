@@ -1,40 +1,12 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type"};
-const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
-const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-Deno.serve(async(req)=>{
-  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
-  try{
-    const admin=createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const body=await req.json().catch(()=>({})); const action=String(body?.action||"");
-    if(action==="resolve_login"){
-      const code=String(body?.login_code||"").trim(); if(!code)return json({error:"Email address is required."},400);
-      const {data:p,error}=await admin.from("profiles").select("id,status,login_code,recovery_email").eq("login_code",code).maybeSingle();
-      if(error)return json({error:error.message},500); if(!p||p.status!=="active")return json({error:"Account unavailable."},404);
-      const {data:u,error:ue}=await admin.auth.admin.getUserById(p.id); if(ue||!u.user)return json({error:"Account authentication record not found."},404);
-      return json({email:u.user.email||p.login_code});
-    }
-    if(action==="send_reset"){
-      const supplied=String(body?.login_code||"").trim().toLowerCase(); const redirect=String(body?.redirect_to||"").trim();
-      if(!supplied)return json({error:"Email address is required."},400);
-      let email=supplied;
-      if(!emailRe.test(email)){
-        const {data:p,error}=await admin.from("profiles").select("id,status,recovery_email,login_code").eq("login_code",supplied).maybeSingle();
-        if(error)return json({error:error.message},500); if(!p||p.status!=="active")return json({error:"Account unavailable."},404);
-        email=p.recovery_email||p.login_code;
-      }
-      if(!emailRe.test(email))return json({error:"A valid login & recovery email is required."},400);
-      const {error:re}=await admin.auth.resetPasswordForEmail(email,{redirectTo:redirect||undefined}); if(re)return json({error:re.message},400);
-      return json({ok:true});
-    }
-    if(action==="set_recovery_email"){
-      const token=(req.headers.get("Authorization")||"").replace(/^Bearer\s+/i,""); if(!token)return json({error:"Missing authorization."},401);
-      const {data:{user:caller}}=await admin.auth.getUser(token); if(!caller)return json({error:"Unauthorized."},401);
-      const email=String(body?.email||"").trim().toLowerCase(); if(!emailRe.test(email))return json({error:"Please provide a valid email address."},400);
-      const {error:ae}=await admin.auth.admin.updateUserById(caller.id,{email,email_confirm:true}); if(ae)return json({error:ae.message},400);
-      const {error:pe}=await admin.from("profiles").update({recovery_email:email,login_code:email}).eq("id",caller.id); if(pe)return json({error:pe.message},400);
-      return json({ok:true,email});
-    }
-    return json({error:"Unknown recovery action."},400);
-  }catch(e){return json({error:e?.message||"Unexpected error."},500)}
-});
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type"}
+const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}})
+const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+async function actor(admin:any,req:Request){const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,''); if(!token) return {error:json({error:'Missing authorization.'},401)}; const {data:{user}}=await admin.auth.getUser(token); if(!user) return {error:json({error:'Unauthorized.'},401)}; const {data:profile}=await admin.from('profiles').select('id,role,status').eq('id',user.id).maybeSingle(); if(!profile||profile.status!=='active') return {error:json({error:'Active account required.'},403)}; return {user,profile}}
+Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors}); try{const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!); const body=await req.json().catch(()=>({})); const action=String(body?.action||'');
+ if(action==='resolve_login'){const supplied=String(body?.login_code||'').trim(); if(!supplied)return json({error:'Email address is required.'},400); let q=admin.from('profiles').select('id,status,login_code,recovery_email'); if(emailRe.test(supplied.toLowerCase())) q=q.eq('login_code',supplied.toLowerCase()); else q=q.eq('login_code',supplied); const {data:p,error}=await q.maybeSingle(); if(error)return json({error:error.message},500); if(!p||p.status!=='active')return json({error:'Account unavailable.'},404); const {data:u,error:ue}=await admin.auth.admin.getUserById(p.id); if(ue||!u.user)return json({error:'Account authentication record not found.'},404); return json({email:u.user.email||p.recovery_email||p.login_code});}
+ if(action==='send_reset'){const email=String(body?.login_code||'').trim().toLowerCase(); const redirect=String(body?.redirect_to||'').trim(); if(!emailRe.test(email))return json({error:'Enter your login email address to reset the password.'},400); const {data:p,error}=await admin.from('profiles').select('id,status,login_code,recovery_email').eq('login_code',email).maybeSingle(); if(error)return json({error:error.message},500); if(!p||p.status!=='active')return json({error:'Account unavailable.'},404); const {error:re}=await admin.auth.resetPasswordForEmail(email,{redirectTo:redirect||undefined}); if(re)return json({error:re.message},400); return json({ok:true});}
+ if(action==='set_recovery_email'){const a=await actor(admin,req); if(a.error)return a.error; const email=String(body?.email||'').trim().toLowerCase(); if(!emailRe.test(email))return json({error:'Please provide a valid email address.'},400); const {data:existing}=await admin.from('profiles').select('id').eq('login_code',email).neq('id',a.user.id).maybeSingle(); if(existing)return json({error:'That email address is already in use.'},409); const {error:ae}=await admin.auth.admin.updateUserById(a.user.id,{email,email_confirm:true}); if(ae)return json({error:ae.message},400); const {error:pe}=await admin.from('profiles').update({recovery_email:email,login_code:email}).eq('id',a.user.id); if(pe)return json({error:pe.message},400); return json({ok:true,email});}
+ if(action==='set_user_email'){const a=await actor(admin,req); if(a.error)return a.error; if(a.profile.role!=='owner')return json({error:'Only the Owner can change another user\'s login email.'},403); const targetId=String(body?.user_id||'').trim(); const email=String(body?.email||'').trim().toLowerCase(); if(!targetId||!email||!emailRe.test(email))return json({error:'User ID and a valid email address are required.'},400); if(targetId===a.user.id)return json({error:'Use your Profile page to change your own login email.'},400); const {data:existing}=await admin.from('profiles').select('id').eq('login_code',email).neq('id',targetId).maybeSingle(); if(existing)return json({error:'That email address is already in use.'},409); const {data:target,error:te}=await admin.from('profiles').select('id,name,role,status').eq('id',targetId).maybeSingle(); if(te||!target)return json({error:'User not found.'},404); const {error:ae}=await admin.auth.admin.updateUserById(target.id,{email,email_confirm:true}); if(ae)return json({error:ae.message},400); const {error:pe}=await admin.from('profiles').update({login_code:email,recovery_email:email}).eq('id',target.id); if(pe)return json({error:pe.message},400); return json({ok:true,email,user_id:target.id});}
+ return json({error:'Unknown recovery action.'},400)
+ }catch(e){return json({error:e?.message||'Unexpected error'},500)}})
