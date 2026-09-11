@@ -13,7 +13,7 @@
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js'"></script>
 <script>
 window.ASSET_FINDER_CLOUD = {
   supabaseUrl: "https://qajpyjdeozydtzdcxhqd.supabase.co",
@@ -654,12 +654,14 @@ document.addEventListener('DOMContentLoaded',()=>{AssetFinderV24.installAssetTyp
     }else{bar.style.display='none';}
   }
   window.assetFinderCloudClient=client;
-  document.addEventListener('DOMContentLoaded',async()=>{
+  async function initCloud(){
     show();stopApp();
     if(!C.supabaseUrl||!C.supabaseAnonKey){err.textContent='Online mode is enabled but Supabase is not configured.';return}
+    if(!window.supabase || !window.supabase.createClient){err.textContent='The online login service could not load. Please reload the page.';return}
     try{const {data}=await client.auth.getSession();if(data.session) await loadProfile(data.session.user); else {title.textContent='Sign in';text.textContent='Use the login code and password supplied by your administrator.';}}
     catch(e){err.textContent=e.message||'Could not connect to the online service.'}
-  });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initCloud); else initCloud();
 })();
 </script>
 
