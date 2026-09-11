@@ -11,6 +11,24 @@
 .top::before{content:"";position:absolute;left:0;right:0;bottom:0;height:42%;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(2,14,31,.62));z-index:0;}
 .top>*{position:relative;z-index:1;}
 @media(max-width:700px){.top{background-position:center bottom;background-size:auto 100%;background-repeat:no-repeat;background-color:#071a35;}.top::before{height:55%;}}
+
+@media print{
+  body.print-inventory *{visibility:hidden!important}
+  body.print-inventory #printInventoryRoot,
+  body.print-inventory #printInventoryRoot *{visibility:visible!important}
+  body.print-inventory #printInventoryRoot{position:absolute;left:0;top:0;width:100%;padding:24px;background:#fff;color:#111}
+  #printInventoryRoot{display:none}
+  body.print-inventory #printInventoryRoot{display:block}
+  .print-title{font-size:24px;font-weight:800;margin-bottom:4px}
+  .print-subtitle{font-size:12px;color:#555;margin-bottom:18px}
+  .print-ap{border:1px solid #bbb;border-radius:8px;padding:12px;margin:0 0 14px;page-break-inside:avoid}
+  .print-ap h3{margin:0 0 4px;font-size:16px}
+  .print-meta{font-size:11px;color:#555;margin-bottom:8px}
+  .print-asset{border-top:1px solid #ddd;padding:8px 0;font-size:11px}
+  .print-asset strong{font-size:12px}
+  .print-history{margin-top:22px}
+  .print-footer{margin-top:20px;font-size:10px;color:#666}
+}
 </style>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
 <script crossorigin="" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -331,16 +349,31 @@ window.ASSET_FINDER_CLOUD = {
     let aps=inv.accessPoints;
     if(q||mode!=='all'||typeFilter) aps=aps.filter(a=>accessMatches(a,q,mode,typeFilter));
     const patchSelect=state.patches.length>1?`<div class="field" style="min-width:220px"><label>Patch</label><select id="patchSelect">${state.patches.map(x=>`<option value="${esc(x.id)}" ${x.id===state.currentPatchId?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>`:'';
-    $('#view').innerHTML=`<div class="toolbar"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">${patchSelect}${isAdmin()?'<button class="btn primary" id="addAccessBtn">＋ Add Access Point</button>':''}<button class="btn secondary" id="historyBtn">Past History (${inv.history.length})</button></div></div>
+    $('#view').innerHTML=`<div class="toolbar"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">${patchSelect}${isAdmin()?'<button class="btn primary" id="addAccessBtn">＋ Add Access Point</button>':''}<button class="btn secondary" id="historyBtn">Past History (${inv.history.length})</button><button class="btn secondary" id="printInventoryBtn">🖨 Print / Save PDF</button></div></div>
       <div class="searchbar"><div style="flex:1"><div class="search-filter-label">Search</div><input id="q" class="search" placeholder="Search SC number, points, asset, location…" value="${esc(q)}"></div><div><div class="search-filter-label">Search field</div><select id="searchMode"><option value="all">All</option><option value="sc">SC number</option><option value="points">Points number</option><option value="type">Asset type</option><option value="rail">Rail type</option><option value="w3">What3Words</option></select></div><div><div class="search-filter-label">Asset type</div><select id="assetTypeFilter"><option value="">All asset types</option>${['IRJ','Switch','Crossing','Rail','Sleepers','Bearers','Point Machine','Signal','Other'].map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div></div>
       <div class="stats"><div class="stat"><b>${apCount}</b><span>Access points</span></div><div class="stat"><b>${assets}</b><span>Assets</span></div><div class="stat"><b>${defective}</b><span>Defective</span></div><div class="stat"><b>${inv.history.length}</b><span>Past history</span></div></div>
       <div id="homeResults">${aps.length?aps.map(a=>accessCard(a)).join(''):`<div class="card empty"><b>No access points found</b><span>${isAdmin()?'Add an access point to start.':'No access points are available in this patch.'}</span></div>`}</div>`;
     $('#searchMode').value=mode; $('#assetTypeFilter').value=typeFilter;
     $('#q').oninput=e=>{state.search.q=e.target.value; const p=state.patches.find(x=>String(x.id)===String(state.currentPatchId)); const inv=p?patchInventory(p.id):{accessPoints:[],history:[]}; const aps=(inv.accessPoints||[]).filter(a=>accessMatches(a,state.search.q,state.search.mode,state.search.assetType)); const box=$('#homeResults'); if(box) box.innerHTML=aps.length?aps.map(a=>accessCard(a)).join(''):`<div class=\"card empty\"><b>No access points found</b><span>${isAdmin()?'Add an access point to start.':'No access points are available in this patch.'}</span></div>`; $('#stats')?.replaceChildren(); }; $('#searchMode').onchange=e=>{state.search.mode=e.target.value;renderHome()}; $('#assetTypeFilter').onchange=e=>{state.search.assetType=e.target.value;renderHome()};
     $('#patchSelect')?.addEventListener('change',e=>{state.currentPatchId=e.target.value;state.search={q:'',mode:'all',assetType:''};renderHome();});
-    $('#addAccessBtn')?.addEventListener('click',()=>openAccess()); $('#historyBtn').onclick=()=>{state.currentView='history';renderHistory();};
+    $('#addAccessBtn')?.addEventListener('click',()=>openAccess()); $('#historyBtn').onclick=()=>{state.currentView='history';renderHistory();}; $('#printInventoryBtn').onclick=()=>printInventory(state.currentPatchId);
     document.querySelectorAll('[data-open-access]').forEach(b=>b.onclick=()=>renderAccessDetail(state.currentPatchId,b.dataset.openAccess));
     document.querySelectorAll('[data-edit-access]').forEach(b=>b.onclick=()=>openAccess(b.dataset.editAccess));
+  }
+
+  function printInventory(patchId){
+    const p=state.patches.find(x=>String(x.id)===String(patchId));
+    const inv=p?patchInventory(p.id):{accessPoints:[],history:[]};
+    if(!p) return alert('No patch is selected.');
+    const escP=v=>esc(v==null?'':String(v));
+    const aps=(inv.accessPoints||[]);
+    const totalAssets=aps.reduce((n,a)=>n+(a.assets||[]).length,0);
+    const apHtml=aps.length?aps.map(a=>`<section class="print-ap"><h3>${escP(a.name)}</h3><div class="print-meta">What3Words: ${escP(a.w3||'—')} · Lorry access: ${escP(a.lorryAccess||'—')} · Rear wheel steer: ${a.rearWheelSteer?'Required':'No'}${a.notes?` · Notes: ${escP(a.notes)}`:''}</div>${(a.assets||[]).length?(a.assets||[]).map(x=>`<div class="print-asset"><strong>${escP(x.type||'Asset')}</strong> · Status: ${escP(x.status||'In Use')}<br>SC: ${escP(x.sc||'—')} · Points: ${escP(x.points||'—')} · Rail: ${escP(x.railType||'—')} · What3Words: ${escP(x.w3||'—')}${x.description?`<br>${escP(x.description)}`:''}</div>`).join(''):'<div class="print-meta">No active assets</div>'}</section>`).join(''):'<p>No access points recorded.</p>';
+    const historyHtml=(inv.history||[]).length?(inv.history||[]).map(h=>`<div class="print-asset"><strong>${escP(h.type||'Asset')}</strong> · SC: ${escP(h.sc||'—')} · Points: ${escP(h.points||'—')} · Removed: ${escP(h.removed?new Date(h.removed).toLocaleString():'—')} · Access point: ${escP(h.accessPointName||'—')}</div>`).join(''):'<div class="print-meta">No past history.</div>';
+    const root=document.createElement('div'); root.id='printInventoryRoot'; root.innerHTML=`<div class="print-title">Asset Finder — ${escP(p.name)} Inventory</div><div class="print-subtitle">Generated ${new Date().toLocaleString()} · ${aps.length} access points · ${totalAssets} active assets</div>${apHtml}<div class="print-history"><h2>Past History</h2>${historyHtml}</div><div class="print-footer">Asset Finder v3.0 · Central inventory report</div>`;
+    document.body.appendChild(root); document.body.classList.add('print-inventory');
+    const cleanup=()=>{document.body.classList.remove('print-inventory');root.remove();window.removeEventListener('afterprint',cleanup);};
+    window.addEventListener('afterprint',cleanup); window.print(); setTimeout(()=>{if(document.body.classList.contains('print-inventory'))cleanup();},2000);
   }
 
   function accessMatches(a,q,mode,filter){
