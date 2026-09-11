@@ -43,6 +43,41 @@ window.ASSET_FINDER_CLOUD = {
   enabled: true
 };
 </script>
+
+<style>
+/* v3.2.1: mobile switch hand/set radio controls */
+@media (max-width:520px){
+  .choice-row{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px!important;
+    align-items:start!important;
+    width:100%;
+    padding:10px 0 6px!important;
+  }
+  .choice-row label{
+    min-width:0!important;
+    width:100%!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:flex-start!important;
+    align-items:center!important;
+    gap:7px!important;
+    text-align:center!important;
+    line-height:1.15!important;
+    font-size:14px!important;
+    font-weight:700!important;
+  }
+  .choice-row input[type="radio"]{
+    width:22px!important;
+    height:22px!important;
+    min-width:22px!important;
+    min-height:22px!important;
+    margin:0!important;
+    flex:0 0 auto!important;
+  }
+}
+</style>
 </head>
 <body>
 <div id="cloudGate" style="display:none;position:fixed;inset:0;background:#071a35;z-index:999999;overflow:auto;padding:24px;box-sizing:border-box">
