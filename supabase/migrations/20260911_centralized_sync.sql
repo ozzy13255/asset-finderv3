@@ -1,0 +1,2 @@
+-- Client v3 centralized sync / realtime support.
+-- Inventory writes remain restricted to Owner and Patch Admin; normal users submit asset approvals.
