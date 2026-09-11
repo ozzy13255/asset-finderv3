@@ -1,12 +1,5 @@
-# Asset Finder v3.3.3
+# Asset Finder Online v3.3.5
 
-Centralised railway asset management application. Inventory, approvals, removals and patch data are stored in Supabase. Authentication sessions are persisted only for secure sign-in continuity; inventory is not stored locally.
+Centralised railway access point and asset register using Supabase + Vercel.
 
-## v3.3.3
-- Automatic auth-token refresh and retry for Supabase requests.
-- Password-reset flow with secure recovery link and new-password screen.
-- Mobile header collapses while scrolling down and returns when scrolling up.
-- Live approval/removal counters and sync/version status retained.
-
-
-Version 3.3.4: mobile recovery UI, login validation and header-scroll refinement.
+This build includes the live approvals/sync system, dynamic asset forms, PDF export, email login/recovery, profile photos, mobile header improvements, JWT refresh handling, and iPhone-friendly recovery/login UI.
