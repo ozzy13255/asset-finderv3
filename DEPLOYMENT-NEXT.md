@@ -1,21 +1,6 @@
-# Deployment checklist
+# Asset Finder v3.0 final deployment
 
-- [ ] Create Supabase project
-- [ ] Run schema.sql
-- [ ] Deploy bootstrap-owner
-- [ ] Set BOOTSTRAP_SECRET
-- [ ] Create Owner account
-- [ ] Deploy admin-create-user
-- [ ] Configure app URL + anon key
-- [ ] Enable online mode
-- [ ] Complete cloud CRUD migration for every existing Asset Finder action
-- [x] Add Owner/Patch Admin panel
-- [x] Add Patch Admin user creation screen
-- [ ] Add account suspension/reset controls
-- [ ] Add audit log
-- [ ] Add cloud photo storage with patch-scoped policies
-- [ ] Test patch isolation with two separate test accounts
-- [ ] Test owner cross-patch access
-- [ ] Test suspended account rejection
-- [ ] Test forced first-login password change
-- [ ] Production HTTPS/domain
+This build removes the obsolete local Data & Backup / Team Cloud Sync controls, keeps one Profile/Log out account bar, persists access points/assets/history centrally to Supabase, improves admin-create-user errors, and adds recovery-email/password-reset support through the Supabase account-recovery Edge Function.
+
+Frontend root: `app`.
+Supabase function: `account-recovery`.
