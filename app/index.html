@@ -152,6 +152,24 @@ window.ASSET_FINDER_CLOUD = {
 }
 @media(min-width:701px){.af338-mobile-menu,.af338-menu-btn{display:none!important}}
 </style>
+<style id="af341-mobile-menu-rail-logo">
+.af338-inner{position:relative;padding-right:54px!important}
+.af338-rail-logo{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:30px;height:30px;object-fit:contain;z-index:2;pointer-events:none}
+.af338-mobile-menu{pointer-events:auto}
+@media(max-width:700px){
+  .af338-inner{padding-right:48px!important;overflow:visible!important}
+  .af338-user{display:none!important}
+  .af338-menu-btn{display:inline-flex!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:4!important}
+  .af338-mobile-menu:not([hidden]){display:block!important}
+  .af338-mobile-menu{z-index:9505!important}
+  .af338-rail-logo{right:10px;width:26px;height:26px}
+  .af338-actions{gap:4px!important}
+  .af338-nav{min-width:0!important}
+}
+@media(min-width:701px){
+  .af338-rail-logo{width:34px;height:34px}
+}
+</style>
 
 </head>
 <body>
@@ -291,7 +309,7 @@ window.ASSET_FINDER_CLOUD = {
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.4.0';
+  const APP_VERSION = '3.4.1';
   const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMobileLayout = () => window.innerWidth <= 700;
   document.documentElement.classList.toggle('af-ios', IS_IOS);
@@ -1256,6 +1274,7 @@ Please refresh after the newest deployment is available.`):'The central server c
           <button type="button" class="af338-bell" title="Pending approvals and removals" data-af338-bell>🔔${total?`<span class="af338-badge">${total}</span>`:''}</button>
           <button type="button" class="af338-menu-btn" aria-label="Menu" aria-expanded="false" data-af338-menu-btn>☰</button>
           <div class="af338-user"><span class="af338-user-name">${esc(state.profile.name||'User')}</span><button type="button" class="af338-profile" data-af338-profile>Profile</button><button type="button" class="af338-logout" data-af338-logout>Log out</button></div>
+          <img class="af338-rail-logo" src="rail-logo.png" alt="Rail logo" aria-hidden="true">
         </div>
       </div>
       <div class="af338-mobile-menu" data-af338-mobile-menu hidden>
