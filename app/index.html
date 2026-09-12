@@ -157,6 +157,7 @@ window.ASSET_FINDER_CLOUD = {
 .af23-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 .af23-danger{background:#9d1c1c!important;color:#fff!important}
 .af23-muted{opacity:.65}
+.queue-head{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin-bottom:12px}.queue-head .section-title{margin:0}.queue-head .sub{margin-top:4px}.queue-head .btn{white-space:nowrap}@media(max-width:700px){.queue-head{grid-template-columns:1fr;gap:8px}.queue-head .back{justify-self:start}.queue-head .btn{justify-self:start}.af33-badge{min-width:19px;height:19px;font-size:10px;padding:0 5px}}
 @media(max-width:560px){.af23-grid{grid-template-columns:1fr}}
 .af23-history-delete,.af23-location-delete{margin-left:8px}
 .check-row{display:flex;align-items:center;gap:9px;font-weight:600;cursor:pointer}.check-row input{width:18px;height:18px;margin:0;accent-color:#f5b800}
@@ -208,7 +209,7 @@ window.ASSET_FINDER_CLOUD = {
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.3.5';
+  const APP_VERSION = '3.3.6';
   const state = {
     session: null,
     user: null,
@@ -227,6 +228,7 @@ window.ASSET_FINDER_CLOUD = {
     appMeta: { latestVersion: null, lastSyncedAt: null, serverOk: false },
     approvalBaselineReady: false,
     pendingApprovalIds: new Set(),
+    pendingRemovalIds: new Set(),
     popupTimer: null,
   };
 
@@ -486,53 +488,71 @@ window.ASSET_FINDER_CLOUD = {
   async function loadAdminData(){
     try { state.users = await api('/rest/v1/profiles?select=id,name,employee_number,login_code,role,status,must_change_password,recovery_email,created_at&order=name.asc'); } catch { state.users=[]; }
     try { state.assignments = await api('/rest/v1/user_patches?select=user_id,patch_id'); } catch { state.assignments=[]; }
-    try { state.approvals = await api('/rest/v1/asset_approvals?select=*&order=created_at.desc'); } catch { state.approvals=[]; }
-    try { state.removalRequests = await api('/rest/v1/asset_removal_requests?select=*&order=created_at.desc'); } catch { state.removalRequests=[]; }
-    handleApprovalNotifications();
+    // Only the pending queues are needed for the admin workflow. This keeps the
+    // counters accurate and avoids re-processing old approved/rejected records.
+    try { state.approvals = await api('/rest/v1/asset_approvals?select=*&status=eq.pending&order=created_at.desc'); } catch { state.approvals=[]; }
+    try { state.removalRequests = await api('/rest/v1/asset_removal_requests?select=*&status=eq.pending&order=created_at.desc'); } catch { state.removalRequests=[]; }
+    handleQueueNotifications();
     updateApprovalBadge();
   }
 
-  function pendingApprovals(){ return (state.approvals||[]).filter(x=>x.status==='pending'); }
+  function pendingApprovals(){ return Array.isArray(state.approvals)?state.approvals:[]; }
+  function pendingRemovals(){ return Array.isArray(state.removalRequests)?state.removalRequests:[]; }
 
-  function handleApprovalNotifications(){
-    const ids=new Set(pendingApprovals().map(x=>String(x.id)));
+  function handleQueueNotifications(){
+    const approvalIds=new Set(pendingApprovals().map(x=>String(x.id)));
+    const removalIds=new Set(pendingRemovals().map(x=>String(x.id)));
     if(state.approvalBaselineReady){
-      const added=[...ids].filter(id=>!state.pendingApprovalIds.has(id));
-      if(added.length) showApprovalPopup(added.length);
+      const newApprovals=[...approvalIds].filter(id=>!state.pendingApprovalIds.has(id)).length;
+      const newRemovals=[...removalIds].filter(id=>!state.pendingRemovalIds.has(id)).length;
+      if(newApprovals||newRemovals) showQueuePopup(newApprovals,newRemovals);
     }
-    state.pendingApprovalIds=ids;
+    state.pendingApprovalIds=approvalIds;
+    state.pendingRemovalIds=removalIds;
     state.approvalBaselineReady=true;
   }
 
-  function showApprovalPopup(count){
+  function showQueuePopup(approvalsCount, removalsCount){
     clearTimeout(state.popupTimer);
     document.querySelectorAll('.af33-popup').forEach(x=>x.remove());
+    const parts=[];
+    if(approvalsCount) parts.push(`${approvalsCount} new asset approval${approvalsCount===1?'':'s'}`);
+    if(removalsCount) parts.push(`${removalsCount} new removal request${removalsCount===1?'':'s'}`);
     const wrap=document.createElement('div'); wrap.className='af33-popup';
-    wrap.innerHTML=`<div class="bell">🔔</div><div class="body"><b>New approval request${count===1?'':'s'}</b><div>${count} new asset approval${count===1?' has':'s have'} been submitted.</div></div><div class="actions"><button class="btn primary" id="af33ViewApprovals">View approvals</button><button class="btn light" id="af33DismissApproval">Dismiss</button></div>`;
+    wrap.innerHTML=`<div class="bell">🔔</div><div class="body"><b>New Asset Finder request${(approvalsCount+removalsCount)===1?'':'s'}</b><div>${esc(parts.join(' · '))}.</div></div><div class="actions"><button class="btn primary" id="af33ViewQueue">View requests</button><button class="btn light" id="af33DismissQueue">Dismiss</button></div>`;
     document.body.appendChild(wrap);
-    wrap.querySelector('#af33ViewApprovals').onclick=()=>{wrap.remove();openApprovals().catch(e=>alert(e.message));};
-    wrap.querySelector('#af33DismissApproval').onclick=()=>wrap.remove();
+    wrap.querySelector('#af33ViewQueue').onclick=()=>{
+      wrap.remove();
+      if(removalsCount && !approvalsCount) openRemovalRequests().catch(e=>alert(e.message));
+      else openApprovals().catch(e=>alert(e.message));
+    };
+    wrap.querySelector('#af33DismissQueue').onclick=()=>wrap.remove();
     state.popupTimer=setTimeout(()=>wrap.remove(),9000);
   }
 
   function updateApprovalBadge(){
     const adminBtn=$('#navAdmin');
     const approvalsCount=pendingApprovals().length;
-    const removalsCount=(state.removalRequests||[]).filter(x=>x.status==='pending').length;
+    const removalsCount=pendingRemovals().length;
     if(adminBtn){
       const total=approvalsCount+removalsCount;
-      adminBtn.innerHTML=`Admin${total?`<span class="af33-badge">${total}</span>`:''}`;
+      adminBtn.innerHTML=`Admin${total?`<span class="af33-badge" aria-label="${total} pending">${total}</span>`:''}`;
     }
     const approvalBtn=$('#approvalsBtn');
     if(approvalBtn){
-      approvalBtn.innerHTML=`Pending Asset Approvals${approvalsCount?`<span class="af33-badge">${approvalsCount}</span>`:''}`;
+      approvalBtn.innerHTML=`Pending Asset Approvals${approvalsCount?`<span class="af33-badge" aria-label="${approvalsCount} pending">${approvalsCount}</span>`:''}`;
     }
     const removalBtn=$('#removalsBtn');
     if(removalBtn){
-      removalBtn.innerHTML=`Removal Requests${removalsCount?`<span class="af33-badge">${removalsCount}</span>`:''}`;
+      removalBtn.innerHTML=`Removal Requests${removalsCount?`<span class="af33-badge" aria-label="${removalsCount} pending">${removalsCount}</span>`:''}`;
     }
     document.querySelectorAll('[data-approvals-badge]').forEach(el=>el.textContent=approvalsCount);
     document.querySelectorAll('[data-removals-badge]').forEach(el=>el.textContent=removalsCount);
+    // Re-render only the counter text; never replace the current approvals/removals page.
+    const title=$('#queueLiveCount');
+    if(title) title.textContent=`${approvalsCount+removalsCount} pending`;
+    const qType=$('#queueTypeCount');
+    if(qType) qType.textContent=`${state.adminSubView==='removals'?removalsCount:approvalsCount} pending`;
   }
 
   async function loadAppMeta(){
@@ -590,14 +610,14 @@ Please refresh after the newest deployment is available.`):'The central server c
       await loadAllData();
       await loadAppMeta();
       updateApprovalBadge();
-      if(state.currentView==='admin'){
+      // Do not replace the approvals/removals DOM every few seconds. On Safari/iPhone
+      // that can interrupt the active view and make it appear as if the queue has
+      // kicked the user back out. The queue remains open; new items are surfaced by
+      // the live counter/popup and can be loaded with the explicit Refresh button.
+      if(state.currentView==='admin' && state.adminSubView==='admin'){
         const active=document.activeElement;
         const typing=active && (active.matches('input,textarea,select,[contenteditable="true"]') || active.closest('form'));
-        if(!typing){
-          if(state.adminSubView==='approvals') renderApprovals();
-          else if(state.adminSubView==='removals') renderRemovalRequests();
-          else renderAdmin();
-        }
+        if(!typing) renderAdmin();
       }
     } catch(e){ console.warn('Refresh failed',e); }
   },5000);
@@ -1002,10 +1022,10 @@ Please refresh after the newest deployment is available.`):'The central server c
 
   async function openApprovals(){ state.currentView='admin'; state.adminSubView='approvals'; await loadAdminData(); renderApprovals(); }
   async function openRemovalRequests(){ state.currentView='admin'; state.adminSubView='removals'; await loadAdminData(); renderRemovalRequests(); }
-  function renderApprovals(){state.currentView='admin';state.adminSubView='approvals';nav('navAdmin');const rows=state.approvals.filter(x=>x.status==='pending');$('#view').innerHTML=`<button class="back" id="adminBack">← Back to Admin</button><div class="section-title">Pending Asset Approvals <span class="pill" style="margin-left:8px">${rows.length} pending</span></div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')}</div><div class="sub">Submitted: ${esc(r.created_at ? new Date(r.created_at).toLocaleString() : '—')} · Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}</div><div class="actions"><button class="btn primary" data-approve="${esc(r.id)}">Approve</button><button class="btn danger" data-reject="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending asset approvals</b><span>New submissions will appear here automatically.</span></div>`}`;$('#adminBack').onclick=renderAdmin;document.querySelectorAll('[data-approve]').forEach(b=>b.onclick=()=>decideApproval(b.dataset.approve,'approved'));document.querySelectorAll('[data-reject]').forEach(b=>b.onclick=()=>decideApproval(b.dataset.reject,'rejected'));}
+  function renderApprovals(){state.currentView='admin';state.adminSubView='approvals';nav('navAdmin');const rows=pendingApprovals();$('#view').innerHTML=`<div class="queue-head"><button class="back" id="adminBack">← Back to Admin</button><div><div class="section-title">Pending Asset Approvals <span class="pill" style="margin-left:8px" id="queueTypeCount">${rows.length} pending</span></div><div class="sub">This queue stays open while live notifications update in the background.</div></div><button class="btn light" id="refreshApprovalQueue" type="button">↻ Refresh</button></div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')}</div><div class="sub">Submitted: ${esc(r.created_at ? new Date(r.created_at).toLocaleString() : '—')} · Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}</div><div class="actions"><button class="btn primary" data-approve="${esc(r.id)}">Approve</button><button class="btn danger" data-reject="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending asset approvals</b><span>New submissions will appear here automatically.</span></div>`}`;$('#adminBack').onclick=renderAdmin;$('#refreshApprovalQueue').onclick=()=>openApprovals().catch(e=>alert(e.message));document.querySelectorAll('[data-approve]').forEach(b=>b.onclick=()=>decideApproval(b.dataset.approve,'approved'));document.querySelectorAll('[data-reject]').forEach(b=>b.onclick=()=>decideApproval(b.dataset.reject,'rejected'));updateApprovalBadge();}
   async function decideApproval(id,status){const r=state.approvals.find(x=>String(x.id)===String(id));if(!r)return; if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');ap.assets=ap.assets||[];if(!ap.assets.some(a=>String(a.id)===String(r.asset_data?.id)))ap.assets.push(r.asset_data);});}await api(`/rest/v1/asset_approvals?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});await loadAdminData();renderApprovals();}
 
-  function renderRemovalRequests(){state.currentView='admin';state.adminSubView='removals';nav('navAdmin');const rows=state.removalRequests.filter(x=>x.status==='pending');$('#view').innerHTML=`<button class="back" id="remBack">← Back to Admin</button><div class="section-title">Removal Requests</div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')} · ${esc(r.asset_id)}</div><div class="sub">Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}${r.asset_data?.type==='Ballast'&&r.asset_data?._removalAmountTons?` · Remove: ${esc(r.asset_data._removalAmountTons)} t`:''}</div><div class="actions"><button class="btn primary" data-approve-removal="${esc(r.id)}">Approve</button><button class="btn danger" data-reject-removal="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending removal requests</b></div>`}`;$('#remBack').onclick=renderAdmin;document.querySelectorAll('[data-approve-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.approveRemoval,'approved'));document.querySelectorAll('[data-reject-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.rejectRemoval,'rejected'));}
+  function renderRemovalRequests(){state.currentView='admin';state.adminSubView='removals';nav('navAdmin');const rows=pendingRemovals();$('#view').innerHTML=`<div class="queue-head"><button class="back" id="remBack">← Back to Admin</button><div><div class="section-title">Removal Requests <span class="pill" style="margin-left:8px" id="queueTypeCount">${rows.length} pending</span></div><div class="sub">This queue stays open while live notifications update in the background.</div></div><button class="btn light" id="refreshRemovalQueue" type="button">↻ Refresh</button></div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')} · ${esc(r.asset_id)}</div><div class="sub">Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}${r.asset_data?.type==='Ballast'&&r.asset_data?._removalAmountTons?` · Remove: ${esc(r.asset_data._removalAmountTons)} t`:''}</div><div class="actions"><button class="btn primary" data-approve-removal="${esc(r.id)}">Approve</button><button class="btn danger" data-reject-removal="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending removal requests</b></div>`}`;$('#remBack').onclick=renderAdmin;$('#refreshRemovalQueue').onclick=()=>openRemovalRequests().catch(e=>alert(e.message));document.querySelectorAll('[data-approve-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.approveRemoval,'approved'));document.querySelectorAll('[data-reject-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.rejectRemoval,'rejected'));updateApprovalBadge();}
   async function decideRemoval(id,status){const r=state.removalRequests.find(x=>String(x.id)===String(id));if(!r)return;if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(r.asset_id));if(i<0)throw new Error('The asset is already gone.');const currentAsset=ap.assets[i];if(currentAsset.type==='Ballast'){const qty=Number(r.asset_data?._removalAmountTons||currentAsset.ballastAmountTons||0);const current=Number(currentAsset.ballastAmountTons||0);if(!(qty>0)||qty>current)throw new Error('Invalid ballast removal amount.');currentAsset.ballastAmountTons=Number((current-qty).toFixed(3));inv.history.unshift({...currentAsset,id:uid(),ballastAmountTons:qty,removedAmountTons:qty,originalBallastAmountTons:current,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});if(currentAsset.ballastAmountTons<=0.000001)ap.assets.splice(i,1);}else{const [asset]=ap.assets.splice(i,1);inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});}});}await api(`/rest/v1/asset_removal_requests?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});await loadAdminData();renderRemovalRequests();}
 
   function startSessionMaintenance(){

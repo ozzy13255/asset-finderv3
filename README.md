@@ -1,5 +1,3 @@
-# Asset Finder Online v3.3.5
+# Asset Finder v3.3.6
 
-Centralised railway access point and asset register using Supabase + Vercel.
-
-This build includes the live approvals/sync system, dynamic asset forms, PDF export, email login/recovery, profile photos, mobile header improvements, JWT refresh handling, and iPhone-friendly recovery/login UI.
+Stable baseline with live approval/removal counters, admin notifications, and a persistent approvals/removals queue that is not re-rendered every polling cycle.
