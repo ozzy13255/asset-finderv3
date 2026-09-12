@@ -178,6 +178,25 @@ window.ASSET_FINDER_CLOUD = {
 .check-row{display:flex;align-items:center;gap:9px;font-weight:600;cursor:pointer}.check-row input{width:18px;height:18px;margin:0;accent-color:#f5b800}
 
 <style>
+/* v3.3.7 final header system: iPhone = Option 4 slim line; other platforms = Option 5 collapsible. */
+.af-other .top{position:sticky!important;top:0!important;z-index:9000;transition:transform .22s ease,box-shadow .22s ease;will-change:transform}
+.af-other .top.af-header-hidden{transform:translateY(-100%);box-shadow:none!important}
+.af-other .topnav{align-items:center}
+.af-other #accountBarMount{margin-top:2px}
+.af-ios .top{position:sticky!important;top:0!important;z-index:9000}
+.af-ios .brand{display:flex!important;align-items:center!important;gap:8px!important;padding:5px 10px 3px!important}
+.af-ios .brand-logo{width:38px!important;height:38px!important}
+.af-ios .brand h1{font-size:18px!important;line-height:1.05!important;margin:0!important}
+.af-ios .brand p{font-size:9px!important;line-height:1.05!important;margin:2px 0 0!important;white-space:nowrap!important}
+.af-ios .topnav{display:flex!important;gap:4px!important;padding:3px 8px 4px!important;overflow-x:auto!important;scrollbar-width:none!important}
+.af-ios .topnav::-webkit-scrollbar{display:none}
+.af-ios .topnav button{padding:6px 9px!important;font-size:11px!important;white-space:nowrap!important}
+.af-ios #accountBarMount{margin:0 8px!important}
+.af-ios #afAccountBar{margin:0!important;padding:4px 0 3px!important;border-top:1px solid rgba(255,255,255,.16)!important}
+.af-ios #afAccountBar span:first-child{font-size:10px!important}
+.af-ios #afAccountBar .btn,.af-ios #afAccountBar .logout-btn{padding:5px 9px!important;font-size:10px!important}
+.af-ios .af33-statusbar{margin:0 8px 4px!important}
+<style>
 .af33-statusbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:8px 0 0;padding:8px 10px;border-radius:10px;background:rgba(3,18,38,.68);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:12px}.af33-statusbar .af33-status-main{display:flex;align-items:center;gap:8px;flex:1;min-width:0}.af33-statusbar .af33-status-copy{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}.af33-statusbar .af33-sync-label{font-weight:900;white-space:nowrap}.af33-statusbar .af33-version-chip,.af33-statusbar .af33-sync-chip,.af33-statusbar .af33-status-chip{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.12);white-space:nowrap}.af33-statusbar .af33-status-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.af33-statusbar .af33-last-sync{opacity:.82;white-space:nowrap}.af33-statusbar .af33-status-button{padding:5px 10px;font-size:11px;white-space:nowrap}
 .af33-status{display:inline-flex;align-items:center;gap:6px;font-weight:800}.af33-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#ffd000}.af33-dot.ok{background:#23c16b}.af33-dot.warn{background:#ffb020}.af33-dot.bad{background:#ef5350}
 .af33-popup{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:12000;width:min(560px,calc(100% - 24px));background:#fff;color:#12243a;border:2px solid #ffd000;border-radius:16px;box-shadow:0 16px 50px rgba(0,0,0,.35);padding:14px 16px;display:flex;align-items:center;gap:12px}.af33-popup .bell{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#ffd000;font-size:18px}.af33-popup .body{flex:1}.af33-popup .body b{display:block;margin-bottom:3px}.af33-popup .actions{display:flex;gap:8px;flex-wrap:wrap}.af33-badge{display:inline-flex;min-width:20px;height:20px;padding:0 6px;border-radius:999px;align-items:center;justify-content:center;background:#c93434;color:#fff;font-size:11px;font-weight:900;margin-left:6px}
@@ -209,7 +228,10 @@ window.ASSET_FINDER_CLOUD = {
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.3.6';
+  const APP_VERSION = '3.3.7';
+  const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  document.documentElement.classList.toggle('af-ios', IS_IOS);
+  document.documentElement.classList.toggle('af-other', !IS_IOS);
   const state = {
     session: null,
     user: null,
@@ -621,6 +643,25 @@ Please refresh after the newest deployment is available.`):'The central server c
       }
     } catch(e){ console.warn('Refresh failed',e); }
   },5000);
+
+  let lastScrollY = window.scrollY || 0;
+  let headerScrollTick = false;
+  window.addEventListener('scroll',()=>{
+    if(headerScrollTick || IS_IOS) return;
+    headerScrollTick = true;
+    requestAnimationFrame(()=>{
+      const y=window.scrollY||0;
+      const top=document.querySelector('.top');
+      if(top && y>70){
+        if(y>lastScrollY+6) top.classList.add('af-header-hidden');
+        else if(y<lastScrollY-4) top.classList.remove('af-header-hidden');
+      } else if(top){
+        top.classList.remove('af-header-hidden');
+      }
+      lastScrollY=y;
+      headerScrollTick=false;
+    });
+  },{passive:true});
 
   function renderCurrent(){
     // Never replace the active form while the user is typing. Re-rendering #view
