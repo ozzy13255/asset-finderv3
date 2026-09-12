@@ -1,4 +1,4 @@
-# Asset Finder v3.5.7 deployment
+# Asset Finder v3.5.8 deployment
 
 Commit: `Replace user Add Access Point with See Pending Requests`
 

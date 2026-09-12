@@ -1,4 +1,4 @@
-# Asset Finder v3.5.7
+# Asset Finder v3.5.8
 
 Online, centralised Asset Finder build with role-based access and responsive OGRT-branded UI.
 

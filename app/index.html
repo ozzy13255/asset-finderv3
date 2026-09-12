@@ -248,6 +248,11 @@ body,#view{color:#081f35!important;}
 .af35-section-head h2 { font-weight:900 !important; }
 .af35-section-head span { color:#ffffff !important; opacity:.96 !important; }
 </style>
+
+<style id="af358-map-css">
+.af358-map-picker{position:fixed;inset:0;z-index:2500;background:rgba(2,10,20,.72);display:grid;place-items:center;padding:14px}.af358-map-card{width:min(900px,96vw);height:min(720px,90vh);background:#edf4f9;border:2px solid #f6c400;border-radius:20px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.55);display:flex;flex-direction:column}.af358-map-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:#0a223b;color:#fff}.af358-map-head b{font-size:16px}.af358-map{flex:1;min-height:360px}.af358-map-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;background:#fff;color:#18314a;border-top:1px solid #c5d4e0}.af358-coords{font-weight:800;font-size:12px}.af358-loc-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.af358-loc-actions .btn{margin:0}.af358-location-note{font-size:11px;color:#526a7e}.af358-map-pin{filter:hue-rotate(150deg) saturate(1.5)}
+@media(max-width:700px){.af358-map-card{width:100%;height:92vh;border-radius:16px}.af358-map-head{padding:10px}.af358-map-foot{align-items:flex-start;flex-direction:column}.af358-map{min-height:0}}
+</style>
 </head>
 <body>
 <div id="cloudGate" style="display:none;position:fixed;inset:0;background:#071a35;z-index:999999;overflow:auto;padding:24px;box-sizing:border-box">
@@ -482,7 +487,7 @@ input,select,textarea{background:#f7f9fb!important;color:#102338!important;borde
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.5.7';
+  const APP_VERSION = '3.5.8';
   const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMobileLayout = () => window.innerWidth <= 700;
   document.documentElement.classList.toggle('af-ios', IS_IOS);
@@ -1173,17 +1178,42 @@ Please refresh after the newest deployment is available.`):'The central server c
     return `<div class="card ${highlight?'af351-highlight':''}" id="asset-${esc(x.id)}"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">${detail}</div><div class="meta">${statusBadge(x.status)} ${x.railType?`<span class="badge planned">${esc(x.railType)}</span>`:''}${pendingRemoval?` <span class="badge planned">Removal awaiting approval</span>`:''}</div></div><div class="actions">${controls}</div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}${x.photos?.length?`<div class="photo-grid">${x.photos.map(p=>`<img class="asset-photo" src="${p}" alt="Asset photo">`).join('')}</div>`:''}</div>`;
   }
   function statusBadge(s){const t=s||'In Use';const cls=/defective/i.test(t)?'defective':/removed/i.test(t)?'removed':/stored/i.test(t)?'planned':'active';return `<span class="badge ${cls}">${esc(t)}</span>`;}
-  function mapHtml(lat,lng,w3){ if(!Number.isFinite(Number(lat))||!Number.isFinite(Number(lng)))return w3?`<div class="meta" style="margin-top:8px"><a href="https://what3words.com/${encodeURIComponent(String(w3).replace(/^\/\/\//,''))}" target="_blank" rel="noopener">Open What3Words</a></div>`:''; return `<div style="margin-top:12px"><a href="https://www.google.com/maps?q=${Number(lat)},${Number(lng)}" target="_blank" rel="noopener">Open location in Maps</a></div>`; }
+  function validCoords(lat,lng){
+    const la=Number(lat), lo=Number(lng);
+    return Number.isFinite(la)&&Number.isFinite(lo)&&la>=-90&&la<=90&&lo>=-180&&lo<=180&&!(Math.abs(la)<1e-9&&Math.abs(lo)<1e-9);
+  }
+  function mapHtml(lat,lng,w3){
+    if(validCoords(lat,lng)) return `<div style="margin-top:12px"><a href="https://www.google.com/maps?q=${Number(lat)},${Number(lng)}" target="_blank" rel="noopener">Open location in Maps</a></div>`;
+    if(w3) return `<div class="meta" style="margin-top:8px"><a href="https://what3words.com/${encodeURIComponent(String(w3).replace(/^\/\/\//,''))}" target="_blank" rel="noopener">Open What3Words</a></div>`;
+    return `<div class="meta" style="margin-top:8px">Location not set</div>`;
+  }
+  function showMapPicker(initialLat='',initialLng='',onPick){
+    const overlay=document.createElement('div'); overlay.className='af358-map-picker'; overlay.innerHTML=`<div class="af358-map-card"><div class="af358-map-head"><b>Choose access point on map</b><button type="button" class="btn light" id="af358MapClose">Close</button></div><div id="af358Map" class="af358-map"></div><div class="af358-map-foot"><div><div class="af358-coords" id="af358Coords">Tap the map to place the pin</div><div class="af358-location-note">You can move the pin by tapping another location.</div></div><div class="af358-loc-actions"><button type="button" class="btn secondary" id="af358UseLocation">Use my location</button><button type="button" class="btn primary" id="af358UsePin" disabled>Use this location</button></div></div></div>`;
+    document.body.appendChild(overlay);
+    let map,marker,chosen=null;
+    const start=validCoords(initialLat,initialLng)?[Number(initialLat),Number(initialLng)]:[52.8,-1.5];
+    const startZoom=validCoords(initialLat,initialLng)?15:6;
+    if(window.L){
+      map=L.map('af358Map',{zoomControl:true}).setView(start,startZoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+      if(validCoords(initialLat,initialLng)){ chosen={lat:Number(initialLat),lng:Number(initialLng)}; marker=L.marker([chosen.lat,chosen.lng]).addTo(map); }
+      map.on('click',e=>{ chosen={lat:e.latlng.lat,lng:e.latlng.lng}; if(marker) marker.setLatLng(e.latlng); else marker=L.marker(e.latlng).addTo(map); $('#af358Coords').textContent=`${chosen.lat.toFixed(6)}, ${chosen.lng.toFixed(6)}`; $('#af358UsePin').disabled=false; });
+      if(chosen){ $('#af358Coords').textContent=`${chosen.lat.toFixed(6)}, ${chosen.lng.toFixed(6)}`; $('#af358UsePin').disabled=false; }
+      setTimeout(()=>map.invalidateSize(),80);
+      $('#af358UseLocation').onclick=()=>{ if(!navigator.geolocation)return alert('Location services are not available on this device.'); navigator.geolocation.getCurrentPosition(pos=>{map.setView([pos.coords.latitude,pos.coords.longitude],17); chosen={lat:pos.coords.latitude,lng:pos.coords.longitude}; if(marker) marker.setLatLng([chosen.lat,chosen.lng]); else marker=L.marker([chosen.lat,chosen.lng]).addTo(map); $('#af358Coords').textContent=`${chosen.lat.toFixed(6)}, ${chosen.lng.toFixed(6)}`; $('#af358UsePin').disabled=false;},()=>alert('Unable to get your current location. You can still tap the map to choose a point.'),{enableHighAccuracy:true,timeout:10000});};
+    } else { $('#af358Map').innerHTML='<div style="padding:20px">Map service unavailable. Please try again.</div>'; }
+    const close=()=>overlay.remove(); $('#af358MapClose').onclick=close; $('#af358UsePin').onclick=()=>{ if(chosen){ onPick(chosen.lat,chosen.lng); close(); }};
+  }
 
   function openAccess(id=null){
     if(!isAdmin()) return;
     const a=id?patchInventory(state.currentPatchId).accessPoints.find(x=>String(x.id)===String(id)):null;
-    $('#sheet').innerHTML=`<h2>${a?'Edit Access Point':'Add Access Point'}</h2><form class="form two" id="accessForm"><div class="field"><label>Access Point Name *</label><input id="aname" required value="${esc(a?.name||'')}"></div><div class="field"><label>What3Words</label><input id="aw3" value="${esc(a?.w3||'')}"></div><div class="field full"><label>Notes</label><textarea id="anotes">${esc(a?.notes||'')}</textarea></div><div class="field"><label>Lorry Size Access Capability</label><select id="alorry"><option value="">Select lorry access</option>${['Large HGV','Small HGV (16T)','LGV','All lorry types'].map(v=>`<option value="${esc(v)}" ${a?.lorryAccess===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div><div class="field"><label>&nbsp;</label><label class="check-row"><input id="arear" type="checkbox" ${a?.rearWheelSteer?'checked':''}> <span>Rear wheel steer required?</span></label></div><div class="actions full"><button type="button" class="btn light" id="cancelAccess">Cancel</button><button class="btn primary">Save Access Point</button></div></form>`;
-    $('#modal').classList.remove('hidden'); $('#cancelAccess').onclick=closeModal; $('#accessForm').onsubmit=e=>{e.preventDefault();saveAccess(id);};
+    $('#sheet').innerHTML=`<h2>${a?'Edit Access Point':'Add Access Point'}</h2><form class="form two" id="accessForm"><div class="field"><label>Access Point Name *</label><input id="aname" required value="${esc(a?.name||'')}"></div><div class="field"><label>What3Words</label><input id="aw3" value="${esc(a?.w3||'')}"></div><div class="field full"><label>Location</label><div class="af358-loc-actions"><button type="button" class="btn secondary" id="chooseMapBtn">📍 Choose on Map</button><span id="chosenLocation" class="af358-coords">${validCoords(a?.lat,a?.lng)?`${Number(a.lat).toFixed(6)}, ${Number(a.lng).toFixed(6)}`:'No map location selected'}</span></div><div class="af358-location-note">Select the exact access point position. This is used by “Open location in Maps”.</div><input type="hidden" id="alat" value="${esc(a?.lat??'')}"><input type="hidden" id="alng" value="${esc(a?.lng??'')}"></div><div class="field full"><label>Notes</label><textarea id="anotes">${esc(a?.notes||'')}</textarea></div><div class="field"><label>Lorry Size Access Capability</label><select id="alorry"><option value="">Select lorry access</option>${['Large HGV','Small HGV (16T)','LGV','All lorry types'].map(v=>`<option value="${esc(v)}" ${a?.lorryAccess===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div><div class="field"><label>&nbsp;</label><label class="check-row"><input id="arear" type="checkbox" ${a?.rearWheelSteer?'checked':''}> <span>Rear wheel steer required?</span></label></div><div class="actions full"><button type="button" class="btn light" id="cancelAccess">Cancel</button><button class="btn primary">Save Access Point</button></div></form>`;
+    $('#modal').classList.remove('hidden'); $('#cancelAccess').onclick=closeModal; $('#chooseMapBtn').onclick=()=>showMapPicker($('#alat').value,$('#alng').value,(lat,lng)=>{ $('#alat').value=lat; $('#alng').value=lng; $('#chosenLocation').textContent=`${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}`; }); $('#accessForm').onsubmit=e=>{e.preventDefault();saveAccess(id);};
   }
 
   async function saveAccess(id){
-    const patchId=state.currentPatchId; const record={id:id||uid(),name:$('#aname').value.trim(),w3:normaliseW3($('#aw3').value),notes:$('#anotes').value.trim(),lorryAccess:$('#alorry').value,rearWheelSteer:$('#arear').checked,assets:[]};
+    const patchId=state.currentPatchId; const lat=$('#alat')?.value.trim(); const lng=$('#alng')?.value.trim(); const record={id:id||uid(),name:$('#aname').value.trim(),w3:normaliseW3($('#aw3').value),notes:$('#anotes').value.trim(),lorryAccess:$('#alorry').value,rearWheelSteer:$('#arear').checked,lat:lat===''?null:Number(lat),lng:lng===''?null:Number(lng),assets:[]};
     if(!record.name)return;
     await mutateInventory(patchId,inv=>{ if(id){const old=inv.accessPoints.find(x=>String(x.id)===String(id)); if(!old)throw new Error('Access point not found.'); record.assets=old.assets||[]; const i=inv.accessPoints.findIndex(x=>String(x.id)===String(id)); inv.accessPoints[i]=record;} else inv.accessPoints.push(record); });
     closeModal(); renderHome();
