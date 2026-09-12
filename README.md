@@ -1,6 +1,5 @@
-# Asset Finder v3.3.6
+# Asset Finder v3.5.2
 
-Stable baseline with live approval/removal counters, admin notifications, and a persistent approvals/removals queue that is not re-rendered every polling cycle.
+OGRT Asset Finder — centralised railway access-point and asset register.
 
-
-Latest release: v3.5.1.
+This release improves search navigation, edit/removal controls from search results, asset highlighting, and contrast across iPhone, Android, tablet and desktop.
