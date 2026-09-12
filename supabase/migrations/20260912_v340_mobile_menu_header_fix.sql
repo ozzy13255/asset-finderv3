@@ -1,0 +1,2 @@
+-- Asset Finder v3.4.0 mobile navigation menu fix
+-- Frontend-only; no database schema changes required.
