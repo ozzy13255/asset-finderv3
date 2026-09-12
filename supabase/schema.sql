@@ -158,7 +158,7 @@ create policy approvals_delete on public.asset_approvals for delete using (publi
 
 -- Asset removal requests
 drop policy if exists asset_removal_select_allowed on public.asset_removal_requests;
-create policy asset_removal_select_allowed on public.asset_removal_requests for select using (public.can_access_patch(patch_id));
+create policy asset_removal_select_allowed on public.asset_removal_requests for select using (requested_by=auth.uid() or public.current_role()='owner' or (public.current_role()='patch_admin' and public.can_access_patch(patch_id)));
 drop policy if exists asset_removal_user_insert on public.asset_removal_requests;
 create policy asset_removal_user_insert on public.asset_removal_requests for insert with check (requested_by=auth.uid() and public.current_role()='user' and public.can_access_patch(patch_id));
 drop policy if exists asset_removal_admin_update on public.asset_removal_requests;
