@@ -1,5 +1,5 @@
-# Asset Finder v3.5.3
+# Asset Finder v3.5.7
 
-OGRT Asset Finder — centralised railway access-point and asset register.
+Online, centralised Asset Finder build with role-based access and responsive OGRT-branded UI.
 
-This release improves search navigation, edit/removal controls from search results, asset highlighting, and contrast across iPhone, Android, tablet and desktop.
+This release changes the normal User home workspace so the unavailable “Add Access Point” action is replaced with “See Pending Requests”.

@@ -482,7 +482,7 @@ input,select,textarea{background:#f7f9fb!important;color:#102338!important;borde
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.5.5';
+  const APP_VERSION = '3.5.7';
   const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMobileLayout = () => window.innerWidth <= 700;
   document.documentElement.classList.toggle('af-ios', IS_IOS);
@@ -1043,7 +1043,7 @@ Please refresh after the newest deployment is available.`):'The central server c
       <section class="af35-content">
         <div class="af35-hero">
           <div><div class="af35-kicker">${role} workspace</div><h1>${esc(p?.name||'Railway patches')}</h1><p>${canAdmin?'Manage access points, review requests and keep the patch inventory current.':'Search, inspect and request changes to assets without leaving your patch.'}</p></div>
-          <div class="af35-quick">${patchSelect}<button class="btn primary" id="addAccessBtn">＋ Add Access Point</button><button class="btn secondary" id="historyBtn">Past History (${inv.history.length})</button><button class="btn secondary" id="printInventoryBtn">🖨 Export PDF</button></div>
+          <div class="af35-quick">${patchSelect}${canAdmin?`<button class="btn primary" id="addAccessBtn">＋ Add Access Point</button>`:`<button class="btn primary" id="myRequestsHeroBtn">📋 See Pending Requests${myPending?` (${myPending})`:''}</button>`}<button class="btn secondary" id="historyBtn">Past History (${inv.history.length})</button><button class="btn secondary" id="printInventoryBtn">🖨 Export PDF</button></div>
         </div>
         ${myRequests}
         <div class="af35-kpis">
@@ -1094,7 +1094,7 @@ Please refresh after the newest deployment is available.`):'The central server c
     $('#q').oninput=e=>{state.search.q=e.target.value; const pp=state.patches.find(x=>String(x.id)===String(state.currentPatchId)); const ii=pp?patchInventory(pp.id):{accessPoints:[]}; const rows=(ii.accessPoints||[]).filter(a=>accessMatches(a,state.search.q,state.search.mode,state.search.assetType)); const box=$('#homeResults'); if(box) box.innerHTML=rows.length?rows.map(a=>accessCard(a)).join(''):`<div class="card empty"><b>No access points found</b><span>Try another search.</span></div>`; renderSearchSuggestions();};
     $('#searchMode').onchange=e=>{state.search.mode=e.target.value;renderHome()}; $('#assetTypeFilter').onchange=e=>{state.search.assetType=e.target.value;renderHome()};
     $('#patchSelect')?.addEventListener('change',e=>{state.currentPatchId=e.target.value;state.search={q:'',mode:'all',assetType:''};renderHome()});
-    $('#addAccessBtn')?.addEventListener('click',()=>openAccess()); $('#historyBtn').onclick=()=>{state.currentView='history';renderHistory()}; $('#printInventoryBtn').onclick=()=>printInventory(state.currentPatchId);
+    $('#addAccessBtn')?.addEventListener('click',()=>openAccess()); $('#myRequestsHeroBtn')?.addEventListener('click',()=>openMyRequestsView()); $('#historyBtn').onclick=()=>{state.currentView='history';renderHistory()}; $('#printInventoryBtn').onclick=()=>printInventory(state.currentPatchId);
     $('#myRequestsBtn')?.addEventListener('click',()=>openMyRequestsView());
     $('#sideHome')?.addEventListener('click',()=>renderHome()); $('#sideHistory')?.addEventListener('click',()=>{state.currentView='history';renderHistory()}); $('#sideProfile')?.addEventListener('click',()=>{state.currentView='profile';renderProfile()}); $('#sideSearch')?.addEventListener('click',()=>$('#q')?.focus());
     $('#sideAdmin')?.addEventListener('click',()=>{state.currentView='admin';renderAdmin()}); $('#sideApprovals')?.addEventListener('click',()=>openApprovals().catch(e=>alert(e.message))); $('#sideRemovals')?.addEventListener('click',()=>openRemovalRequests().catch(e=>alert(e.message))); $('#sideRequests')?.addEventListener('click',()=>openMyRequestsView());

@@ -1,11 +1,5 @@
-# Asset Finder v3.5.4
+# Asset Finder v3.5.7 deployment
 
-## Release
-- Live search suggestions for assets/access points.
-- Search result actions: edit/remove for admins; removal request for users.
-- Clicking an asset result opens its stored access point and highlights/wobbles the matching asset.
-- Higher contrast across platforms while retaining the blue theme.
-- Central application version: 3.5.4.
+Commit: `Replace user Add Access Point with See Pending Requests`
 
-## Deploy
-Replace the repository `app/` and `supabase/` contents with this release, then commit and push to `main`.
+Deploy the contents of `app/` to the repository `app/` directory and retain the `supabase/` directory and project documentation.
