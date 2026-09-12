@@ -171,6 +171,16 @@ window.ASSET_FINDER_CLOUD = {
 }
 </style>
 
+<style id="af351-ui-fix">
+:root{--af35-bg:#0b1a2a;--af35-panel:#173652;--af35-panel2:#245173;--af35-border:rgba(255,255,255,.18)}
+body{background:linear-gradient(135deg,#0b1a2a 0%,#143554 50%,#1c476a 100%)!important;color:#f7fbff!important}
+.af35-header{background:linear-gradient(180deg,rgba(9,31,52,.98),rgba(18,56,86,.98))!important}
+.card,.stat,.searchbar,.toolbar,.modal .sheet,.form,.notice,.queue-card{background:linear-gradient(180deg,rgba(32,70,105,.98),rgba(18,43,68,.98))!important;border-color:rgba(255,255,255,.18)!important}
+.af35-nav .af35-badge-static{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:19px!important;height:19px!important;padding:0 5px!important;margin-left:6px!important;border-radius:999px!important;background:#ef3f3f!important;color:#fff!important;font-size:10px!important;font-weight:900!important}
+.af351-search-results{margin-top:10px;display:grid;gap:8px}.af351-result{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:linear-gradient(180deg,#355f84,#193957);color:#fff;cursor:pointer;text-align:left;box-shadow:0 10px 24px rgba(0,0,0,.18)}.af351-result:hover{border-color:#ffd43d}.af351-result .kind{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#ffd43d;font-weight:900}.af351-result .name{font-weight:900;font-size:15px}.af351-result .meta{font-size:11px;color:#e2edf7;margin-top:3px}.af351-result .go{font-weight:900;color:#ffd43d;font-size:18px}.af351-highlight{outline:3px solid #ffd43d;box-shadow:0 0 0 7px rgba(255,212,61,.16),0 20px 50px rgba(0,0,0,.24)!important}
+@media(max-width:900px){.af35-head-inner{grid-template-columns:34px minmax(0,1fr) auto!important;gap:5px!important;padding:7px 7px!important}.af35-brand img{width:34px!important;height:34px!important}.af35-brand .txt{display:none!important}.af35-nav{display:flex!important;min-width:0!important;gap:4px!important;flex-wrap:nowrap!important;overflow:visible!important}.af35-nav button{display:inline-flex!important;align-items:center!important;flex:0 0 auto!important;padding:7px 9px!important;font-size:11px!important;white-space:nowrap!important;color:#f5fbff!important;background:#163554!important;border-color:#3b668d!important}.af35-nav button.on{background:linear-gradient(180deg,#ffd83d,#f6c400)!important;color:#081728!important}.af35-actions{gap:4px!important;min-width:0!important}.af35-sync{max-width:74px!important;padding:6px 7px!important;font-size:10px!important;overflow:hidden!important;text-overflow:ellipsis!important}.af35-bell{width:34px!important;height:34px!important;padding:5px!important;font-size:16px!important}.af35-menu{display:inline-flex!important;width:34px!important;height:34px!important;padding:0!important;align-items:center!important;justify-content:center!important;font-size:0!important}.af35-menu::after{content:'☰';font-size:19px!important}.af35-ogrt{width:52px!important;height:24px!important}.af35-user{display:none!important}}
+@media(max-width:390px){.af35-head-inner{grid-template-columns:30px minmax(0,1fr) auto!important;gap:3px!important}.af35-brand img{width:30px!important;height:30px!important}.af35-nav button{padding:6px 7px!important;font-size:10px!important}.af35-sync{max-width:58px!important;font-size:9px!important}.af35-bell{width:31px!important;height:31px!important}.af35-menu{width:31px!important;height:31px!important}.af35-ogrt{width:44px!important;height:20px!important}.af351-result .name{font-size:13px!important}.af351-result .meta{font-size:10px!important}}
+</style>
 </head>
 <body>
 <div id="cloudGate" style="display:none;position:fixed;inset:0;background:#071a35;z-index:999999;overflow:auto;padding:24px;box-sizing:border-box">
@@ -343,7 +353,7 @@ input,select,textarea{background:#f7f9fb!important;color:#102338!important;borde
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.5.0';
+  const APP_VERSION = '3.5.1';
   const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMobileLayout = () => window.innerWidth <= 700;
   document.documentElement.classList.toggle('af-ios', IS_IOS);
@@ -915,17 +925,33 @@ Please refresh after the newest deployment is available.`):'The central server c
         </div>
         <div class="af35-searchcard">
           <div class="af35-search-grid">
-            <div class="full"><label>Search</label><input id="q" class="search" placeholder="Search SC number, points, asset, location…" value="${esc(q)}"></div>
+            <div class="full"><label>Search</label><input id="q" class="search" placeholder="Search SC number, points, asset, location…" value="${esc(q)}" autocomplete="off"></div>
             <div><label>Search field</label><select id="searchMode"><option value="all">All</option><option value="sc">SC number</option><option value="points">Points number</option><option value="type">Asset type</option><option value="rail">Rail type</option><option value="w3">What3Words</option></select></div>
             <div><label>Asset type</label><select id="assetTypeFilter"><option value="">All asset types</option>${['Switch','Crossing','IRJ','Ballast','Rail','Miscellaneous'].map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div>
           </div>
+          <div id="af351SearchResults" class="af351-search-results" hidden></div>
         </div>
         <div class="af35-section-head"><h2>${q||typeFilter?'Search results':'Recent access points'}</h2><span>${aps.length} location${aps.length===1?'':'s'} visible</span></div>
         <div id="homeResults">${aps.length?aps.map(a=>accessCard(a)).join(''):`<div class="card empty"><b>No access points found</b><span>${canAdmin?'Add an access point to start.':'No access points are available in this patch.'}</span></div>`}</div>
       </section>
     </div>`;
-    $('#searchMode').value=mode; $('#assetTypeFilter').value=typeFilter;
-    $('#q').oninput=e=>{state.search.q=e.target.value; const pp=state.patches.find(x=>String(x.id)===String(state.currentPatchId)); const ii=pp?patchInventory(pp.id):{accessPoints:[]}; const rows=(ii.accessPoints||[]).filter(a=>accessMatches(a,state.search.q,state.search.mode,state.search.assetType)); const box=$('#homeResults'); if(box) box.innerHTML=rows.length?rows.map(a=>accessCard(a)).join(''):`<div class="card empty"><b>No access points found</b><span>Try another search.</span></div>`;};
+    $('#searchMode').value=mode; $('#assetTypeFilter').value=typeFilter; renderSearchSuggestions();
+    function renderSearchSuggestions(){
+      const q=String(state.search.q||'').trim(); const sug=$('#af351SearchResults'); if(!sug)return;
+      if(!q){sug.hidden=true;sug.innerHTML='';return;}
+      const p=state.patches.find(x=>String(x.id)===String(state.currentPatchId)); const inv=p?patchInventory(p.id):{accessPoints:[]}; const qq=q.toLowerCase(); const hits=[];
+      (inv.accessPoints||[]).forEach(a=>{
+        if(accessMatches(a,q,state.search.mode,state.search.assetType)) hits.push({kind:'Access point',name:a.name||'Unnamed access point',meta:`${(a.assets||[]).length} assets · ${a.w3||'No What3Words'}`,accessId:a.id});
+        (a.assets||[]).forEach(x=>{
+          const hay=[x.sc,x.points,x.type,x.railType,x.w3,x.description].filter(Boolean).join(' ').toLowerCase();
+          if(hay.includes(qq) && (!state.search.assetType || String(x.type||'').toLowerCase()===String(state.search.assetType).toLowerCase())) hits.push({kind:x.type||'Asset',name:`${x.type||'Asset'}${x.sc?` · SC ${x.sc}`:''}`,meta:`Stored at ${a.name||'Access point'}${x.points?` · Points ${x.points}`:''}`,accessId:a.id,assetId:x.id});
+        });
+      });
+      const seen=new Set(); const top=hits.filter(h=>{const k=`${h.kind}|${h.name}|${h.accessId}|${h.assetId||''}`;if(seen.has(k))return false;seen.add(k);return true}).slice(0,8);
+      sug.hidden=!top.length; sug.innerHTML=top.map(h=>`<button type="button" class="af351-result" data-search-access="${esc(h.accessId)}" data-search-asset="${esc(h.assetId||'')}"><div><div class="kind">${esc(h.kind)}</div><div class="name">${esc(h.name)}</div><div class="meta">${esc(h.meta)}</div></div><div class="go">›</div></button>`).join('');
+      sug.querySelectorAll('[data-search-access]').forEach(b=>b.onclick=()=>{const aid=b.dataset.searchAccess;const xid=b.dataset.searchAsset;state.search.q='';sug.hidden=true;renderAccessDetail(state.currentPatchId,aid,xid||null);});
+    }
+    $('#q').oninput=e=>{state.search.q=e.target.value; const pp=state.patches.find(x=>String(x.id)===String(state.currentPatchId)); const ii=pp?patchInventory(pp.id):{accessPoints:[]}; const rows=(ii.accessPoints||[]).filter(a=>accessMatches(a,state.search.q,state.search.mode,state.search.assetType)); const box=$('#homeResults'); if(box) box.innerHTML=rows.length?rows.map(a=>accessCard(a)).join(''):`<div class="card empty"><b>No access points found</b><span>Try another search.</span></div>`; renderSearchSuggestions();};
     $('#searchMode').onchange=e=>{state.search.mode=e.target.value;renderHome()}; $('#assetTypeFilter').onchange=e=>{state.search.assetType=e.target.value;renderHome()};
     $('#patchSelect')?.addEventListener('change',e=>{state.currentPatchId=e.target.value;state.search={q:'',mode:'all',assetType:''};renderHome()});
     $('#addAccessBtn')?.addEventListener('click',()=>openAccess()); $('#historyBtn').onclick=()=>{state.currentView='history';renderHistory()}; $('#printInventoryBtn').onclick=()=>printInventory(state.currentPatchId);
@@ -978,17 +1004,18 @@ Please refresh after the newest deployment is available.`):'The central server c
     const uid=String(state.profile?.id||'');
     return (state.removalRequests||[]).find(r=>r.status==='pending' && String(r.requested_by)===uid && String(r.asset_id)===String(assetId)) || null;
   }
-  function renderAccessDetail(patchId, accessId){
+  function renderAccessDetail(patchId, accessId, focusAssetId=null){
     state.currentView='access'; state.currentPatchId=patchId; state.currentAccessId=accessId; nav('navHome');
     const a=patchInventory(patchId).accessPoints.find(x=>String(x.id)===String(accessId)); if(!a){renderHome();return;}
     const pendingAdds=pendingUserAdditionForAccess(accessId);
     const pendingRemoveIds=new Set((state.removalRequests||[]).filter(r=>r.status==='pending'&&String(r.requested_by)===String(state.profile?.id||'')).map(r=>String(r.asset_id)));
-    const approvedAssets=(a.assets||[]).map(x=>assetCard(a,x,pendingRemoveIds.has(String(x.id))));
+    const approvedAssets=(a.assets||[]).map(x=>assetCard(a,x,pendingRemoveIds.has(String(x.id)),String(focusAssetId||'')===String(x.id)));
     const pendingCards=pendingAdds.map(r=>pendingAssetCard(r)).join('');
     $('#view').innerHTML=`<button class="back" id="backHome">← Back to Access Points</button><div class="card" style="margin-top:12px"><div class="cardhead"><div><div class="title">${esc(a.name)}</div><div class="sub">${esc(a.w3||'No What3Words')}</div><div class="sub">${esc(a.notes||'')}</div>${a.lorryAccess?`<div class="meta"><span class="badge planned">🚚 ${esc(a.lorryAccess)}</span></div>`:''}${a.rearWheelSteer?'<div class="meta"><span class="badge planned">Rear wheel steer required</span></div>':''}</div>${isAdmin()?`<button class="btn light" id="editAccessDetail">Edit</button>`:''}</div>${mapHtml(a.lat,a.lng,a.w3)}</div>
       <div class="toolbar"><div><button class="btn primary" id="assetAction">＋ ${isAdmin()?'Add Asset':'Request New Asset'}</button><span class="sub" style="margin-left:10px">${(a.assets||[]).length} approved asset${(a.assets||[]).length===1?'':'s'}${pendingAdds.length?` · ${pendingAdds.length} awaiting approval`:''}</span></div></div>
       ${pendingCards?`<div class="section-title" style="margin:8px 0">Awaiting approval</div>${pendingCards}`:''}
       ${(a.assets||[]).length?approvedAssets.join(''):`<div class="card empty"><b>No assets recorded</b><span>${isAdmin()?'Add an asset to this access point.':'No assets have been approved for this access point.'}</span></div>`}`;
+    if(focusAssetId){setTimeout(()=>document.getElementById('asset-'+String(focusAssetId).replace(/[^a-zA-Z0-9_-]/g,''))?.scrollIntoView({behavior:'smooth',block:'center'}),120);}
     $('#backHome').onclick=renderHome; $('#editAccessDetail')?.addEventListener('click',()=>openAccess(a.id)); $('#assetAction')?.addEventListener('click',()=>openAsset(a.id));
     document.querySelectorAll('[data-edit-asset]').forEach(b=>b.onclick=()=>openAsset(a.id,b.dataset.editAsset));
     document.querySelectorAll('[data-remove-asset]').forEach(b=>b.onclick=()=>removeAsset(a.id,b.dataset.removeAsset));
@@ -997,10 +1024,10 @@ Please refresh after the newest deployment is available.`):'The central server c
   function pendingAssetCard(r){
     const x=r.asset_data||{};
     const detail=[`SC: ${esc(x.sc||'—')}`,x.points?`Points: ${esc(x.points)}`:'',x.type==='Ballast'&&x.ballastAmountTons!=null?`Amount: ${esc(x.ballastAmountTons)} t`:(x.railLength?`Rail length: ${esc(x.railLength)} ${esc(x.railLengthUnit||'m')}`:''),x.railType?`Rail: ${esc(x.railType)}`:''].filter(Boolean).join(' · ');
-    return `<div class="card"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">${detail}</div><div class="meta"><span class="badge planned">Awaiting approval</span></div></div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}</div>`;
+    return `<div class="card ${highlight?'af351-highlight':''}" id="asset-${esc(x.id)}"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">${detail}</div><div class="meta"><span class="badge planned">Awaiting approval</span></div></div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}</div>`;
   }
 
-  function assetCard(a,x,pendingRemoval=false){
+  function assetCard(a,x,pendingRemoval=false,highlight=false){
     const controls=isAdmin()?`<button class="btn light" data-edit-asset="${esc(x.id)}">Edit</button><button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Remove Ballast':'Remove'}</button>`:pendingRemoval?`<button class="btn light" disabled>Removal awaiting approval</button>`:`<button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Request Ballast Removal':'Request Asset Removal'}</button>`;
     const detail=[`SC: ${esc(x.sc||'—')}`,x.points?`Points: ${esc(x.points)}`:'',x.type==='Ballast'?`Amount: ${esc(x.ballastAmountTons)} t`:(x.railLength?`Rail length: ${esc(x.railLength)} ${esc(x.railLengthUnit||'m')}`:''),x.railType?`Rail: ${esc(x.railType)}`:''].filter(Boolean).join(' · ');
     return `<div class="card"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">${detail}</div><div class="meta">${statusBadge(x.status)} ${x.railType?`<span class="badge planned">${esc(x.railType)}</span>`:''}${pendingRemoval?` <span class="badge planned">Removal awaiting approval</span>`:''}</div></div><div class="actions">${controls}</div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}${x.photos?.length?`<div class="photo-grid">${x.photos.map(p=>`<img class="asset-photo" src="${p}" alt="Asset photo">`).join('')}</div>`:''}</div>`;

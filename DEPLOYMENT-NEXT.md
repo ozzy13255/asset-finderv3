@@ -7,3 +7,7 @@ Replace the repository `app/`, `supabase/`, `DEPLOYMENT-NEXT.md`, and `README.md
 
 ## v3.4.2 Mobile menu
 Phones now use a compact navigation row with Access Points, History, sync status, notification bell and Menu. Settings, Admin, Profile and Log out are available from Menu; tablets/desktops retain the collapsible header.
+
+
+## v3.5.1
+Deploy the contents of `app/` and `supabase/` and commit `Improve mobile navigation, contrast and search results`.
