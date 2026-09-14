@@ -1264,30 +1264,92 @@ Please refresh after the newest deployment is available.`):'The central server c
     return 'Miscellaneous';
   }
   function af360ExtractNumber(line, pattern){const m=line.match(pattern); return m?m[1]:'';}
+  function af360NormaliseDescription(s){
+    return String(s||'')
+      .replace(/\s+/g,' ')
+      .replace(/[|¦]+/g,' ')
+      .replace(/\b(?:Bi|i|OOSES|O0SES|00SES)\b/gi,' ')
+      .trim();
+  }
   function af360ParseManifest(text){
-    const lines=String(text||'').split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
+    const rawLines=String(text||'').split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
     const out=[];
-    for(const line of lines){
+    const addItem=(item)=>{ if(!item.description && !item.materialNumber) return; out.push(item); };
+
+    // Prefer table-like rows: material no + description + ordered/dispatched quantities.
+    // This prevents OCR debris from adjacent columns being appended to the description.
+    for(const line of rawLines){
       if(line.length<8) continue;
-      const materialNumber=af360ExtractNumber(line,/^(\d{6,})\b/);
-      const type=af360GuessType(line);
-      const hasMaterial=!!materialNumber;
+      const tableRow=line.match(/^(\d{6,})\s+(.+?)(?:\s+(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s+)?(?:\s+(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s*)?$/i);
+      const materialNumber=tableRow?.[1] || af360ExtractNumber(line,/^(\d{6,})\b/);
       const likely=/\b(bearer|sleeper|ballast|rail|irj|switch|crossing|point)\b/i.test(line);
-      if(!hasMaterial && !likely) continue;
-      const lenM=line.match(/(\d+(?:\.\d+)?)\s*(mm|m|ft)\b/i);
-      const length=lenM?Number(lenM[1]):''; const lengthUnit=lenM?lenM[2].toLowerCase():'';
-      const materialType=/\b(concrete|wood|steel|composite)\b/i.exec(line)?.[1]||'';
-      const nums=[...line.matchAll(/\b(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?|TONNES?|T)?\b/gi)].map(m=>Number(m[1])).filter(Number.isFinite);
-      const quantity=nums.length?nums[nums.length>=2?nums.length-2:nums.length-1]:1;
-      let desc=line.replace(/^\d{6,}\s*/,'').replace(/\b\d+(?:\.\d+)?\s*(?:EA|EACH|NOS?|NO\.?|TONNES?|T)\b/gi,'').replace(/\s{2,}/g,' ').trim();
-      if(!desc) desc=line;
-      let ballastAmount='';
-      if(type==='Ballast'){const bm=line.match(/(\d+(?:\.\d+)?)\s*(?:t|tonnes?)\b/i);ballastAmount=bm?Number(bm[1]):(Number.isFinite(quantity)?quantity:'');}
-      const item={id:uid(),type,description:desc,materialNumber,quantity:Number.isFinite(quantity)?quantity:1,amount:Number.isFinite(quantity)?quantity:1,length,lengthUnit,materialType,ballastAmountTons:ballastAmount,sc:af360ExtractNumber(line,/\b(?:SC|SC\s*No\.?)[\s:#-]*(\d+)\b/i),points:af360ExtractNumber(line,/\b(?:Point|Points)\s*[:#-]?\s*([A-Za-z0-9-]+)\b/i),railType:af360ExtractNumber(line,/\b(56E1|54E1|CEN60)\b/i),sourceLine:line,needsReview:(type==='Miscellaneous'||(type==='Bearer'||type==='Sleeper')&&!materialType||type==='Rail'&&!length||type==='Switch'&&!item.sc)};
-      out.push(item);
+      if(!materialNumber && !likely) continue;
+
+      let desc=tableRow?.[2] || line.replace(/^\d{6,}\s*/,'');
+      let ordered=tableRow?.[3] ? Number(tableRow[3]) : null;
+      let dispatched=tableRow?.[4] ? Number(tableRow[4]) : null;
+
+      // Strip common delivery-note trailing quantity/unit columns even when OCR collapses spacing.
+      const qtyTail=desc.match(/^(.*?)(?:\s+)(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s*$/i);
+      if(qtyTail){
+        if(ordered==null) ordered=Number(qtyTail[2]);
+        desc=qtyTail[1];
+      }
+      const twoQty=desc.match(/^(.*?)(?:\s+)(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s+(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s*$/i);
+      if(twoQty){
+        desc=twoQty[1]; ordered=Number(twoQty[2]); dispatched=Number(twoQty[3]);
+      }
+
+      desc=af360NormaliseDescription(desc);
+      if(!desc || /^(ordered|description|material no|dispatched)$/i.test(desc)) continue;
+
+      const type=af360GuessType(desc);
+      const lenM=desc.match(/(\d+(?:\.\d+)?)\s*(mm|m|ft)\b/i);
+      const length=lenM?Number(lenM[1]):'';
+      const lengthUnit=lenM?lenM[2].toLowerCase():'';
+      const materialType=/\b(concrete|wood|steel|composite)\b/i.exec(desc)?.[1]||'';
+      const quantity=Number.isFinite(dispatched)?dispatched:(Number.isFinite(ordered)?ordered:1);
+      const item={
+        id:uid(), type, description:desc, materialNumber,
+        quantity:quantity>0?quantity:1, amount:quantity>0?quantity:1,
+        length, lengthUnit, materialType,
+        ballastAmountTons:type==='Ballast'?quantity:'',
+        sc:af360ExtractNumber(desc,/\b(?:SC|SC\s*No\.?)\s*[:#-]?\s*(\d+)\b/i),
+        points:af360ExtractNumber(desc,/\b(?:Point|Points)\s*[:#-]?\s*([A-Za-z0-9-]+)\b/i),
+        railType:af360ExtractNumber(desc,/\b(56E1|54E1|CEN60)\b/i),
+        sourceLine:line,
+        needsReview:(type==='Miscellaneous'||((type==='Bearer'||type==='Sleeper')&&!materialType)||(type==='Rail'&&!length))
+      };
+      addItem(item);
     }
+
+    // Fallback for documents whose OCR did not preserve table rows.
+    if(!out.length){
+      for(const line of rawLines){
+        if(line.length<8) continue;
+        const materialNumber=af360ExtractNumber(line,/^(\d{6,})\b/);
+        const type=af360GuessType(line);
+        const likely=/\b(bearer|sleeper|ballast|rail|irj|switch|crossing|point)\b/i.test(line);
+        if(!materialNumber && !likely) continue;
+        const lenM=line.match(/(\d+(?:\.\d+)?)\s*(mm|m|ft)\b/i);
+        const length=lenM?Number(lenM[1]):''; const lengthUnit=lenM?lenM[2].toLowerCase():'';
+        const materialType=/\b(concrete|wood|steel|composite)\b/i.exec(line)?.[1]||'';
+        const desc=af360NormaliseDescription(line.replace(/^\d{6,}\s*/,'').replace(/\b\d+(?:\.\d+)?\s*(?:EA|EACH|NOS?|NO\.?)\b/gi,''));
+        const item={id:uid(),type,description:desc,materialNumber,quantity:1,amount:1,length,lengthUnit,materialType,ballastAmountTons:type==='Ballast'?(line.match(/(\d+(?:\.\d+)?)\s*(?:t|tonnes?)\b/i)?.[1]||''):'',sc:'',points:'',railType:'',sourceLine:line,needsReview:true};
+        addItem(item);
+      }
+    }
+
     const grouped=[]; const map=new Map();
-    for(const item of out){const key=[item.materialNumber,item.type,item.description,item.length,item.lengthUnit,item.materialType].join('|'); if(map.has(key)){map.get(key).quantity+=(Number(item.quantity)||1);map.get(key).amount=map.get(key).quantity;} else {map.set(key,item);grouped.push(item);}}
+    for(const item of out){
+      const key=[item.materialNumber,item.type,item.description,item.length,item.lengthUnit,item.materialType].join('|');
+      if(map.has(key)){
+        map.get(key).quantity += Number(item.quantity)||1;
+        map.get(key).amount = map.get(key).quantity;
+      } else {
+        map.set(key,item); grouped.push(item);
+      }
+    }
     return grouped.slice(0,100);
   }
   async function af360ExtractDocument(file, progressEl){

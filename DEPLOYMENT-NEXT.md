@@ -1,4 +1,4 @@
-# Deploy Asset Finder v3.6.0
+# Deploy Asset Finder v3.6.1
 
 Replace `/app` and `/supabase` in the existing repository with this build, commit to `main`, and allow Vercel to redeploy.
 
