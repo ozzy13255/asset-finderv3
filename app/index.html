@@ -512,7 +512,7 @@ input,select,textarea{background:#f7f9fb!important;color:#102338!important;borde
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.6.0';
+  const APP_VERSION = '3.6.2';
   const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMobileLayout = () => window.innerWidth <= 700;
   document.documentElement.classList.toggle('af-ios', IS_IOS);
@@ -1198,8 +1198,11 @@ Please refresh after the newest deployment is available.`):'The central server c
   }
 
   function assetCard(a,x,pendingRemoval=false,highlight=false){
-    const controls=isAdmin()?`<button class="btn light" data-edit-asset="${esc(x.id)}">Edit</button><button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Remove Ballast':'Remove'}</button>`:pendingRemoval?`<button class="btn light" disabled>Removal awaiting approval</button>`:`<button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Request Ballast Removal':'Request Asset Removal'}</button>`;
-    const detail=[`SC: ${esc(x.sc||'—')}`,x.points?`Points: ${esc(x.points)}`:'',x.type==='Ballast'?`Amount: ${esc(x.ballastAmountTons)} t`:(x.railLength?`Rail length: ${esc(x.railLength)} ${esc(x.railLengthUnit||'m')}`:''),x.railType?`Rail: ${esc(x.railType)}`:''].filter(Boolean).join(' · ');
+    const qtyType=['Bearer','Sleeper'];
+    const hasUnitQuantity=qtyType.includes(String(x.type||'')) && Number(x.quantity||x.amount||0)>0;
+    const quantity=hasUnitQuantity?Number(x.quantity||x.amount||0):0;
+    const controls=isAdmin()?`<button class="btn light" data-edit-asset="${esc(x.id)}">Edit</button><button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Remove Ballast':hasUnitQuantity?`Remove 1 ${esc(x.type)}`:'Remove'}</button>`:pendingRemoval?`<button class="btn light" disabled>Removal awaiting approval</button>`:`<button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Request Ballast Removal':hasUnitQuantity?`Request 1 ${esc(x.type)} Removal`:'Request Asset Removal'}</button>`;
+    const detail=[`SC: ${esc(x.sc||'—')}`,x.points?`Points: ${esc(x.points)}`:'',hasUnitQuantity?`Qty: ${esc(quantity)}`:'',x.type==='Ballast'?`Amount: ${esc(x.ballastAmountTons)} t`:(x.railLength?`Rail length: ${esc(x.railLength)} ${esc(x.railLengthUnit||'m')}`:''),x.length?`Length: ${esc(x.length)} ${esc(x.lengthUnit||'')}`:'',x.railType?`Rail: ${esc(x.railType)}`:''].filter(Boolean).join(' · ');
     return `<div class="card ${highlight?'af351-highlight':''}" id="asset-${esc(x.id)}"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">${detail}</div><div class="meta">${statusBadge(x.status)} ${x.railType?`<span class="badge planned">${esc(x.railType)}</span>`:''}${pendingRemoval?` <span class="badge planned">Removal awaiting approval</span>`:''}</div></div><div class="actions">${controls}</div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}${x.photos?.length?`<div class="photo-grid">${x.photos.map(p=>`<img class="asset-photo" src="${p}" alt="Asset photo">`).join('')}</div>`:''}</div>`;
   }
   function statusBadge(s){const t=s||'In Use';const cls=/defective/i.test(t)?'defective':/removed/i.test(t)?'removed':/stored/i.test(t)?'planned':'active';return `<span class="badge ${cls}">${esc(t)}</span>`;}
@@ -1254,7 +1257,7 @@ Please refresh after the newest deployment is available.`):'The central server c
   }
   function af360GuessType(line){
     const s=line.toLowerCase();
-    if(/\bbearer\b/.test(s)) return 'Bearer';
+    if(/\bbearer\b|\bbearerr\b|bearer\s*r\b/.test(s)) return 'Bearer';
     if(/\bsleeper\b/.test(s)) return 'Sleeper';
     if(/\bballast\b/.test(s)) return 'Ballast';
     if(/\birj\b|glued joint|manufactured joint|rail joint/.test(s)) return 'IRJ';
@@ -1269,6 +1272,7 @@ Please refresh after the newest deployment is available.`):'The central server c
       .replace(/\s+/g,' ')
       .replace(/[|¦]+/g,' ')
       .replace(/\b(?:Bi|i|OOSES|O0SES|00SES)\b/gi,' ')
+      .replace(/\bBearerR\b/gi,'Bearer R')
       .trim();
   }
   function af360ParseManifest(text){
@@ -1280,24 +1284,22 @@ Please refresh after the newest deployment is available.`):'The central server c
     // This prevents OCR debris from adjacent columns being appended to the description.
     for(const line of rawLines){
       if(line.length<8) continue;
-      const tableRow=line.match(/^(\d{6,})\s+(.+?)(?:\s+(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s+)?(?:\s+(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s*)?$/i);
-      const materialNumber=tableRow?.[1] || af360ExtractNumber(line,/^(\d{6,})\b/);
-      const likely=/\b(bearer|sleeper|ballast|rail|irj|switch|crossing|point)\b/i.test(line);
+      const materialNumber=af360ExtractNumber(line,/^(\d{6,})\b/);
+      const likely=/\b(bearer|bearerr|sleeper|ballast|rail|irj|switch|crossing|point)\b/i.test(line);
       if(!materialNumber && !likely) continue;
 
-      let desc=tableRow?.[2] || line.replace(/^\d{6,}\s*/,'');
-      let ordered=tableRow?.[3] ? Number(tableRow[3]) : null;
-      let dispatched=tableRow?.[4] ? Number(tableRow[4]) : null;
-
-      // Strip common delivery-note trailing quantity/unit columns even when OCR collapses spacing.
-      const qtyTail=desc.match(/^(.*?)(?:\s+)(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s*$/i);
-      if(qtyTail){
-        if(ordered==null) ordered=Number(qtyTail[2]);
-        desc=qtyTail[1];
-      }
+      // Start with the text after the material number, then peel delivery-note
+      // quantity columns from the END. OCR commonly produces forms such as
+      // "Bearer R Type - 6040mm 1.00 EA 2" where the final quantity has no
+      // unit. Handling the tail this way keeps 6040mm inside the description.
+      let desc=line.replace(/^\d{6,}\s*/,'');
+      let ordered=null, dispatched=null;
       const twoQty=desc.match(/^(.*?)(?:\s+)(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s+(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s*$/i);
       if(twoQty){
         desc=twoQty[1]; ordered=Number(twoQty[2]); dispatched=Number(twoQty[3]);
+      } else {
+        const oneQty=desc.match(/^(.*?)(?:\s+)(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?)\s*(?:\s+\d+(?:\.\d+)?)?\s*$/i);
+        if(oneQty){ desc=oneQty[1]; ordered=Number(oneQty[2]); }
       }
 
       desc=af360NormaliseDescription(desc);
@@ -1329,7 +1331,7 @@ Please refresh after the newest deployment is available.`):'The central server c
         if(line.length<8) continue;
         const materialNumber=af360ExtractNumber(line,/^(\d{6,})\b/);
         const type=af360GuessType(line);
-        const likely=/\b(bearer|sleeper|ballast|rail|irj|switch|crossing|point)\b/i.test(line);
+        const likely=/\b(bearer|bearerr|sleeper|ballast|rail|irj|switch|crossing|point)\b/i.test(line);
         if(!materialNumber && !likely) continue;
         const lenM=line.match(/(\d+(?:\.\d+)?)\s*(mm|m|ft)\b/i);
         const length=lenM?Number(lenM[1]):''; const lengthUnit=lenM?lenM[2].toLowerCase():'';
@@ -1340,12 +1342,30 @@ Please refresh after the newest deployment is available.`):'The central server c
       }
     }
 
+    // Group identical material lines even when OCR produces slightly different
+    // descriptions (for example stray column text on one occurrence). The
+    // material number + classified type + dimensions/material are the stable
+    // identity for a manifest line. This keeps 3 + 7 identical bearers as one
+    // review item with Qty 10 instead of separate cards.
     const grouped=[]; const map=new Map();
+    const cleanGroupText=v=>af360NormaliseDescription(String(v||''))
+      .toLowerCase()
+      .replace(/\b(?:ea|each|nos?|no\.)\b/g,' ')
+      .replace(/\s+/g,' ')
+      .trim();
     for(const item of out){
-      const key=[item.materialNumber,item.type,item.description,item.length,item.lengthUnit,item.materialType].join('|');
+      const stableDescription=cleanGroupText(item.description);
+      // Material number is the primary identity. OCR can vary the description
+      // between otherwise identical rows, so do not let stray OCR text create
+      // separate cards. Dimensions/type are retained as safeguards.
+      const key=item.materialNumber
+        ? ['MAT',item.materialNumber,item.type || '',item.length || '',item.lengthUnit || '',String(item.materialType||'').toLowerCase()].join('|')
+        : ['DESC',item.type || '',item.length || '',item.lengthUnit || '',String(item.materialType||'').toLowerCase(),stableDescription.replace(/[^a-z0-9]+/g,' ')].join('|');
       if(map.has(key)){
-        map.get(key).quantity += Number(item.quantity)||1;
-        map.get(key).amount = map.get(key).quantity;
+        const existing=map.get(key);
+        existing.quantity = (Number(existing.quantity)||0) + (Number(item.quantity)||1);
+        existing.amount = existing.quantity;
+        existing.needsReview = !!(existing.needsReview || item.needsReview);
       } else {
         map.set(key,item); grouped.push(item);
       }
@@ -1380,12 +1400,17 @@ Please refresh after the newest deployment is available.`):'The central server c
   }
   function renderManifestReview(items,aps,fileName){
     const accessOpts=aps.map(a=>`<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
-    $('#manifestReview').innerHTML=`<div class="card"><div class="title">Detected assets</div><div class="small">${esc(fileName)} · ${items.length} grouped asset line${items.length===1?'':'s'}</div><div class="af360-import-toolbar"><label style="font-weight:800">Assign all to <select id="manifestBulkAccess"><option value="">Choose access point</option>${accessOpts}</select></label><button class="btn secondary" id="manifestApplyBulk">Apply to all</button></div><div class="af360-import-list">${items.map((it,i)=>`<div class="af360-import-row ${it.needsReview?'needs-review':''}" data-item="${i}"><label style="display:flex;gap:8px;align-items:center;font-weight:900"><input type="checkbox" class="manifest-check" checked> ${esc(it.type)} · ${esc(it.description)}</label><div class="small">Material ${esc(it.materialNumber||'—')} · Qty ${esc(it.quantity)}${it.length?` · ${esc(it.length)} ${esc(it.lengthUnit)}`:''}${it.materialType?` · ${esc(it.materialType)}`:''}</div><div class="mini-grid"><select class="manifest-type">${['Switch','Crossing','IRJ','Ballast','Rail','Bearer','Sleeper','Miscellaneous'].map(t=>`<option ${it.type===t?'selected':''}>${t}</option>`).join('')}</select><input class="manifest-amount" type="number" min="0" step="0.01" value="${esc(it.amount||it.quantity||1)}" placeholder="Amount"><select class="manifest-access"><option value="">Assign access point</option>${accessOpts}</select></div><div class="mini-grid"><input class="manifest-material" value="${esc(it.materialType||'')}" placeholder="Concrete / Wood / Steel / Composite"><input class="manifest-length" value="${esc(it.length||'')}" placeholder="Length"><select class="manifest-unit"><option value="">Unit</option><option ${it.lengthUnit==='mm'?'selected':''}>mm</option><option ${it.lengthUnit==='m'?'selected':''}>m</option><option ${it.lengthUnit==='ft'?'selected':''}>ft</option></select></div></div>`).join('')}</div><div class="actions" style="margin-top:12px"><button type="button" class="btn light" id="manifestCancel2">Cancel</button><button type="button" class="btn primary" id="manifestAdd">Add selected to inventory</button></div></div>`;
+    $('#manifestReview').innerHTML=`<div class="card"><div class="title">Detected assets</div><div class="small">${esc(fileName)} · ${items.length} grouped asset line${items.length===1?'':'s'}</div><div class="af360-import-toolbar"><label style="font-weight:800">Assign all to <select id="manifestBulkAccess"><option value="">Choose access point</option>${accessOpts}</select></label><button class="btn secondary" id="manifestApplyBulk">Apply to all</button></div><div class="af360-import-list">${items.map((it,i)=>`<div class="af360-import-row ${it.needsReview?'needs-review':''}" data-item="${i}"><label style="display:flex;gap:8px;align-items:center;font-weight:900"><input type="checkbox" class="manifest-check" checked> ${esc(it.type)} · ${esc(it.description)}</label><div class="small">Material ${esc(it.materialNumber||'—')} · Qty ${esc(it.quantity)}${it.length?` · ${esc(it.length)} ${esc(it.lengthUnit)}`:''}${it.materialType?` · ${esc(it.materialType)}`:''}</div><div class="mini-grid"><select class="manifest-type">${['Switch','Crossing','IRJ','Ballast','Rail','Bearer','Sleeper','Miscellaneous'].map(t=>`<option ${it.type===t?'selected':''}>${t}</option>`).join('')}</select><input class="manifest-amount" type="number" min="0" step="0.01" value="${esc(it.amount||it.quantity||1)}" placeholder="Amount"><select class="manifest-access"><option value="">Assign access point</option>${accessOpts}</select></div><div class="mini-grid"><input class="manifest-material" value="${esc(it.materialType||'')}" placeholder="Concrete / Wood / Steel / Composite"><div style="display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px"><input class="manifest-length" value="${esc(it.length||'')}" placeholder="Length"><select class="manifest-unit"><option value="">Unit</option><option ${it.lengthUnit==='mm'?'selected':''}>mm</option><option ${it.lengthUnit==='m'?'selected':''}>m</option><option ${it.lengthUnit==='ft'?'selected':''}>ft</option></select></div></div></div>`).join('')}</div><div class="actions" style="margin-top:12px"><button type="button" class="btn light" id="manifestCancel2">Cancel</button><button type="button" class="btn primary" id="manifestAdd">Add selected to inventory</button></div></div>`;
     $('#manifestCancel2').onclick=closeModal; $('#manifestBulkAccess').onchange=()=>{}; $('#manifestApplyBulk').onclick=()=>{const v=$('#manifestBulkAccess').value;if(!v)return alert('Choose an access point first.');document.querySelectorAll('.manifest-access').forEach(x=>x.value=v);}; $('#manifestAdd').onclick=()=>commitManifestImport(items);
   }
   async function commitManifestImport(items){
     const patchId=state.currentPatchId; const rows=[...document.querySelectorAll('.af360-import-row')].filter(r=>r.querySelector('.manifest-check')?.checked); if(!rows.length)return alert('Select at least one detected asset.');
-    try{await mutateInventory(patchId,inv=>{for(const row of rows){const i=Number(row.dataset.item),src=items[i];const type=row.querySelector('.manifest-type')?.value||src.type;const accessId=row.querySelector('.manifest-access')?.value;if(!accessId)throw new Error(`Choose an access point for ${src.description}.`);const amount=Number(row.querySelector('.manifest-amount')?.value||src.quantity||1);const materialType=row.querySelector('.manifest-material')?.value?.trim()||src.materialType||'';const length=Number(row.querySelector('.manifest-length')?.value||src.length||0);const unit=row.querySelector('.manifest-unit')?.value||src.lengthUnit||'';const ap=inv.accessPoints.find(a=>String(a.id)===String(accessId));if(!ap)throw new Error('Access point not found.');const asset={id:uid(),type,status:'Stored',description:src.description,materialNumber:src.materialNumber||'',quantity:amount,amount,materialType,length,lengthUnit:unit,sc:src.sc||'',points:src.points||'',railType:src.railType||'',ballastAmountTons:type==='Ballast'?amount:undefined,importSource:'Manifest import',importedAt:new Date().toISOString(),needsReview:!!src.needsReview};(ap.assets ||= []).push(asset);}});closeModal();renderHome();alert('Manifest assets added to the selected access points.');}catch(e){alert(e.message||'Could not import manifest assets.');}
+    try{await mutateInventory(patchId,inv=>{for(const row of rows){const i=Number(row.dataset.item),src=items[i];const type=row.querySelector('.manifest-type')?.value||src.type;const accessId=row.querySelector('.manifest-access')?.value;if(!accessId)throw new Error(`Choose an access point for ${src.description}.`);const amount=Number(row.querySelector('.manifest-amount')?.value||src.quantity||1);const materialType=row.querySelector('.manifest-material')?.value?.trim()||src.materialType||'';const length=Number(row.querySelector('.manifest-length')?.value||src.length||0);const unit=row.querySelector('.manifest-unit')?.value||src.lengthUnit||'';const ap=inv.accessPoints.find(a=>String(a.id)===String(accessId));if(!ap)throw new Error('Access point not found.');const asset={id:uid(),type,status:'Stored',description:src.description,materialNumber:src.materialNumber||'',quantity:amount,amount,materialType,length,lengthUnit:unit,sc:src.sc||'',points:src.points||'',railType:src.railType||'',ballastAmountTons:type==='Ballast'?amount:undefined,importSource:'Manifest import',importedAt:new Date().toISOString(),needsReview:!!src.needsReview};
+          const norm=v=>af360NormaliseDescription(String(v||'')).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+          const sameAsset=z=>String(z.materialNumber||'')===String(asset.materialNumber||'') && String(z.type||'')===String(asset.type||'') && Number(z.length||0)===Number(asset.length||0) && String(z.lengthUnit||'')===String(asset.lengthUnit||'') && String(z.materialType||'').toLowerCase()===String(asset.materialType||'').toLowerCase() && norm(z.description)===norm(asset.description);
+          const existing=(ap.assets||[]).find(sameAsset);
+          if(existing){ existing.quantity=(Number(existing.quantity)||0)+amount; existing.amount=existing.quantity; if(type==='Ballast') existing.ballastAmountTons=existing.quantity; existing.needsReview=!!(existing.needsReview||asset.needsReview); }
+          else (ap.assets ||= []).push(asset);}});closeModal();renderHome();alert('Manifest assets added to the selected access points.');}catch(e){alert(e.message||'Could not import manifest assets.');}
   }
   function assetTypeOptions(selected=''){
     const types=['Switch','Crossing','IRJ','Ballast','Rail','Bearer','Sleeper','Miscellaneous'];
@@ -1513,6 +1538,7 @@ Please refresh after the newest deployment is available.`):'The central server c
       const ap=patchInventory(state.currentPatchId).accessPoints.find(x=>String(x.id)===String(aid));const asset=(ap?.assets||[]).find(x=>String(x.id)===String(xid));
       if(!asset)throw new Error('Asset not found.');
       let removalAmount=null;
+      const unitQuantityType=['Bearer','Sleeper'].includes(String(asset.type||''));
       if(asset.type==='Ballast'){
         const current=Number(asset.ballastAmountTons||0);
         if(!(current>0))throw new Error('This ballast asset has no remaining quantity recorded.');
@@ -1520,13 +1546,21 @@ Please refresh after the newest deployment is available.`):'The central server c
         if(entered===null)return;
         removalAmount=Number(String(entered).replace(',','.'));
         if(!(removalAmount>0) || removalAmount>current) throw new Error(`Enter an amount between 0 and ${current} tonnes.`);
+      } else if(unitQuantityType){
+        const current=Number(asset.quantity||asset.amount||0);
+        if(!(current>0))throw new Error(`This ${asset.type.toLowerCase()} asset has no remaining quantity recorded.`);
+        removalAmount=1;
+        if(current<=1 && !confirm(`Remove the final ${asset.type.toLowerCase()}? It will move to Past History.`)) return;
+        if(current>1 && !confirm(`Remove 1 ${asset.type.toLowerCase()}?\nRemaining after removal: ${current-1}`)) return;
       } else if(!confirm('Remove this asset? It will move to Past History.')) return;
 
       if(!isAdmin()){
         const requestAsset={...asset};
         if(asset.type==='Ballast') requestAsset._removalAmountTons=removalAmount;
+        else if(unitQuantityType) requestAsset._removalQuantity=1;
         await api('/rest/v1/asset_removal_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:state.currentPatchId,access_point_id:aid,access_point_name:ap.name,asset_id:xid,asset_data:requestAsset,requested_by:state.profile.id,status:'pending'})});
-        alert(asset.type==='Ballast'?`Ballast removal request for ${removalAmount} tonnes submitted for approval.`:'Removal request submitted for approval.'); if(isAdmin()) await loadAdminData(); else { await loadUserRequests(); renderAccessDetail(state.currentPatchId, state.currentAccessId); } return;
+        const msg=asset.type==='Ballast'?`Ballast removal request for ${removalAmount} tonnes submitted for approval.`:unitQuantityType?`Removal request for 1 ${asset.type.toLowerCase()} submitted for approval.`:'Removal request submitted for approval.';
+        alert(msg); if(isAdmin()) await loadAdminData(); else { await loadUserRequests(); renderAccessDetail(state.currentPatchId, state.currentAccessId); } return;
       }
 
       await mutateInventory(state.currentPatchId,inv=>{
@@ -1540,6 +1574,14 @@ Please refresh after the newest deployment is available.`):'The central server c
           currentAsset.ballastAmountTons=Number((current-qty).toFixed(3));
           inv.history.unshift({...currentAsset,id:uid(),ballastAmountTons:qty,removedAmountTons:qty,originalBallastAmountTons:current,removed:Date.now(),accessPointId:ap2.id,accessPointName:ap2.name,status:'Removed'});
           if(currentAsset.ballastAmountTons<=0.000001) ap2.assets.splice(i,1);
+        } else if(['Bearer','Sleeper'].includes(String(currentAsset.type||''))){
+          const current=Number(currentAsset.quantity||currentAsset.amount||0);
+          if(current<1)throw new Error(`No ${currentAsset.type.toLowerCase()} units remain.`);
+          const removedUnit={...currentAsset,id:uid(),quantity:1,amount:1,removedQuantity:1,originalQuantity:current,removed:Date.now(),accessPointId:ap2.id,accessPointName:ap2.name,status:'Removed'};
+          inv.history.unshift(removedUnit);
+          const remaining=current-1;
+          if(remaining<=0){ ap2.assets.splice(i,1); }
+          else { currentAsset.quantity=remaining; currentAsset.amount=remaining; }
         } else {
           const [assetRemoved]=ap2.assets.splice(i,1);
           inv.history.unshift({...assetRemoved,removed:Date.now(),accessPointId:ap2.id,accessPointName:ap2.name,status:'Removed'});
@@ -1678,7 +1720,7 @@ Please refresh after the newest deployment is available.`):'The central server c
   async function decideApproval(id,status){const r=state.approvals.find(x=>String(x.id)===String(id));if(!r)return; if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');ap.assets=ap.assets||[];if(!ap.assets.some(a=>String(a.id)===String(r.asset_data?.id)))ap.assets.push(r.asset_data);});}await api(`/rest/v1/asset_approvals?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});await loadAdminData();renderApprovals();}
 
   function renderRemovalRequests(){state.currentView='admin';state.adminSubView='removals';nav('navAdmin');const rows=pendingRemovals();$('#view').innerHTML=`<div class="queue-head"><button class="back" id="remBack">← Back to Admin</button><div><div class="section-title">Removal Requests <span class="pill" style="margin-left:8px" id="queueTypeCount">${rows.length} pending</span></div><div class="sub">This queue stays open while live notifications update in the background.</div></div><button class="btn light" id="refreshRemovalQueue" type="button">↻ Refresh</button></div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')} · ${esc(r.asset_id)}</div><div class="sub">Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}${r.asset_data?.type==='Ballast'&&r.asset_data?._removalAmountTons?` · Remove: ${esc(r.asset_data._removalAmountTons)} t`:''}</div><div class="actions"><button class="btn primary" data-approve-removal="${esc(r.id)}">Approve</button><button class="btn danger" data-reject-removal="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending removal requests</b></div>`}`;$('#remBack').onclick=renderAdmin;$('#refreshRemovalQueue').onclick=()=>openRemovalRequests().catch(e=>alert(e.message));document.querySelectorAll('[data-approve-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.approveRemoval,'approved'));document.querySelectorAll('[data-reject-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.rejectRemoval,'rejected'));updateApprovalBadge();}
-  async function decideRemoval(id,status){const r=state.removalRequests.find(x=>String(x.id)===String(id));if(!r)return;if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(r.asset_id));if(i<0)throw new Error('The asset is already gone.');const currentAsset=ap.assets[i];if(currentAsset.type==='Ballast'){const qty=Number(r.asset_data?._removalAmountTons||currentAsset.ballastAmountTons||0);const current=Number(currentAsset.ballastAmountTons||0);if(!(qty>0)||qty>current)throw new Error('Invalid ballast removal amount.');currentAsset.ballastAmountTons=Number((current-qty).toFixed(3));inv.history.unshift({...currentAsset,id:uid(),ballastAmountTons:qty,removedAmountTons:qty,originalBallastAmountTons:current,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});if(currentAsset.ballastAmountTons<=0.000001)ap.assets.splice(i,1);}else{const [asset]=ap.assets.splice(i,1);inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});}});}await api(`/rest/v1/asset_removal_requests?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});await loadAdminData();renderRemovalRequests();}
+  async function decideRemoval(id,status){const r=state.removalRequests.find(x=>String(x.id)===String(id));if(!r)return;if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(r.asset_id));if(i<0)throw new Error('The asset is already gone.');const currentAsset=ap.assets[i];if(currentAsset.type==='Ballast'){const qty=Number(r.asset_data?._removalAmountTons||currentAsset.ballastAmountTons||0);const current=Number(currentAsset.ballastAmountTons||0);if(!(qty>0)||qty>current)throw new Error('Invalid ballast removal amount.');currentAsset.ballastAmountTons=Number((current-qty).toFixed(3));inv.history.unshift({...currentAsset,id:uid(),ballastAmountTons:qty,removedAmountTons:qty,originalBallastAmountTons:current,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});if(currentAsset.ballastAmountTons<=0.000001)ap.assets.splice(i,1);}else if(['Bearer','Sleeper'].includes(String(currentAsset.type||'')) && Number(r.asset_data?._removalQuantity||0)>0){const current=Number(currentAsset.quantity||currentAsset.amount||0);if(current<1)throw new Error(`No ${currentAsset.type.toLowerCase()} units remain.`);const removedUnit={...currentAsset,id:uid(),quantity:1,amount:1,removedQuantity:1,originalQuantity:current,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'};inv.history.unshift(removedUnit);const remaining=current-1;if(remaining<=0)ap.assets.splice(i,1);else{currentAsset.quantity=remaining;currentAsset.amount=remaining;}}else{const [asset]=ap.assets.splice(i,1);inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,status:'Removed'});}});}await api(`/rest/v1/asset_removal_requests?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});await loadAdminData();renderRemovalRequests();}
 
   function startSessionMaintenance(){
     const refresh=()=>{ if(state.session?.refresh_token) refreshAuthSession().catch(()=>{}); };
