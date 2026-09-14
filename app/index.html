@@ -253,6 +253,31 @@ body,#view{color:#081f35!important;}
 .af358-map-picker{position:fixed;inset:0;z-index:2500;background:rgba(2,10,20,.72);display:grid;place-items:center;padding:14px}.af358-map-card{width:min(900px,96vw);height:min(720px,90vh);background:#edf4f9;border:2px solid #f6c400;border-radius:20px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.55);display:flex;flex-direction:column}.af358-map-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:#0a223b;color:#fff}.af358-map-head b{font-size:16px}.af358-map{flex:1;min-height:360px}.af358-map-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;background:#fff;color:#18314a;border-top:1px solid #c5d4e0}.af358-coords{font-weight:800;font-size:12px}.af358-loc-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.af358-loc-actions .btn{margin:0}.af358-location-note{font-size:11px;color:#526a7e}.af358-map-pin{filter:hue-rotate(150deg) saturate(1.5)}
 @media(max-width:700px){.af358-map-card{width:100%;height:92vh;border-radius:16px}.af358-map-head{padding:10px}.af358-map-foot{align-items:flex-start;flex-direction:column}.af358-map{min-height:0}}
 </style>
+
+<style id="af360-final-mobile-layout">
+@media(max-width:700px){
+  .topnav{gap:6px!important;padding-left:43px!important;padding-right:7px!important;overflow:hidden!important;}
+  .topnav button{font-size:11px!important;padding:8px 10px!important;min-height:38px!important;border-radius:12px!important;}
+  .af-mobile-menu-btn{min-width:50px!important;min-height:44px!important;padding:8px 12px!important;font-size:22px!important;line-height:1!important;font-weight:900!important;}
+  .af-mobile-alert-btn{min-width:46px!important;min-height:42px!important;font-size:18px!important;padding:8px 10px!important;}
+  .af33-statusbar{display:none!important;}
+  .af35-hero .af35-quick{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;justify-content:stretch!important;}
+  .af35-hero .af35-quick .field{grid-column:1 / -1!important;width:100%!important;}
+  .af35-hero .af35-quick .btn{min-width:0!important;width:100%!important;flex:0 0 auto!important;white-space:normal!important;}
+  .af35-hero .af35-quick .btn:nth-child(1){min-height:82px!important;}
+  .af-import-card{max-height:80vh!important;overflow:auto!important;}
+}
+.af360-import-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.af360-import-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.af360-import-list{display:grid;gap:8px;margin-top:10px}
+.af360-import-row{background:#fff;border:2px solid #8fb6cf;border-radius:14px;padding:10px;color:#0a2037}
+.af360-import-row.needs-review{border-color:#f0b429;background:#fffaf0}
+.af360-import-row .mini-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.af360-import-row select,.af360-import-row input{width:100%;background:#fff;color:#0a2037;border:1px solid #8fb6cf;border-radius:8px;padding:8px}
+.af360-step{display:flex;gap:8px;align-items:center;margin:8px 0;font-weight:800;color:#173a5c}
+.af360-step .dot{width:24px;height:24px;border-radius:50%;background:#ffd000;color:#071a35;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+@media(max-width:700px){.af360-import-grid{grid-template-columns:1fr}.af360-import-row .mini-grid{grid-template-columns:1fr 1fr}}
+</style>
 </head>
 <body>
 <div id="cloudGate" style="display:none;position:fixed;inset:0;background:#071a35;z-index:999999;overflow:auto;padding:24px;box-sizing:border-box">
@@ -487,7 +512,7 @@ input,select,textarea{background:#f7f9fb!important;color:#102338!important;borde
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.5.8';
+  const APP_VERSION = '3.6.0';
   const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMobileLayout = () => window.innerWidth <= 700;
   document.documentElement.classList.toggle('af-ios', IS_IOS);
@@ -1042,13 +1067,13 @@ Please refresh after the newest deployment is available.`):'The central server c
         <button class="af35-side-btn on" id="sideHome">⌂ Dashboard</button>
         <button class="af35-side-btn" id="sideSearch">⌕ Search assets</button>
         <button class="af35-side-btn" id="sideHistory">◷ Past history</button>
-        ${canAdmin?`<button class="af35-side-btn" id="sideApprovals">✓ Approvals <span class="af35-badge-static">${pendingA}</span></button><button class="af35-side-btn" id="sideRemovals">↻ Removals <span class="af35-badge-static">${pendingR}</span></button><button class="af35-side-btn" id="sideAdmin">⚙ Admin</button>`:`<button class="af35-side-btn" id="sideRequests">⌁ My requests</button>`}
+        ${canAdmin?`<button class="af35-side-btn" id="sideApprovals">✓ Approvals <span class="af35-badge-static">${pendingA}</span></button><button class="af35-side-btn" id="sideRemovals">↻ Removals <span class="af35-badge-static">${pendingR}</span></button><button class="af35-side-btn" id="sideAdmin">⚙ Admin</button><button class="af35-side-btn" id="sideManifest">📄 Import manifest</button>`:`<button class="af35-side-btn" id="sideRequests">⌁ My requests</button>`}
         <button class="af35-side-btn" id="sideProfile">◉ Profile</button>
       </aside>
       <section class="af35-content">
         <div class="af35-hero">
           <div><div class="af35-kicker">${role} workspace</div><h1>${esc(p?.name||'Railway patches')}</h1><p>${canAdmin?'Manage access points, review requests and keep the patch inventory current.':'Search, inspect and request changes to assets without leaving your patch.'}</p></div>
-          <div class="af35-quick">${patchSelect}${canAdmin?`<button class="btn primary" id="addAccessBtn">＋ Add Access Point</button>`:`<button class="btn primary" id="myRequestsHeroBtn">📋 See Pending Requests${myPending?` (${myPending})`:''}</button>`}<button class="btn secondary" id="historyBtn">Past History (${inv.history.length})</button><button class="btn secondary" id="printInventoryBtn">🖨 Export PDF</button></div>
+          <div class="af35-quick">${patchSelect}${canAdmin?`<button class="btn primary" id="addAccessBtn">＋ Add Access Point</button><button class="btn secondary" id="manifestImportBtn">📄 Import Manifest</button>`:`<button class="btn primary" id="myRequestsHeroBtn">📋 See Pending Requests${myPending?` (${myPending})`:''}</button>`}<button class="btn secondary" id="historyBtn">Past History (${inv.history.length})</button><button class="btn secondary" id="printInventoryBtn">🖨 Export PDF</button></div>
         </div>
         ${myRequests}
         <div class="af35-kpis">
@@ -1061,7 +1086,7 @@ Please refresh after the newest deployment is available.`):'The central server c
           <div class="af35-search-grid">
             <div class="full"><label>Search</label><input id="q" class="search" placeholder="Search SC number, points, asset, location…" value="${esc(q)}" autocomplete="off"></div>
             <div><label>Search field</label><select id="searchMode"><option value="all">All</option><option value="sc">SC number</option><option value="points">Points number</option><option value="type">Asset type</option><option value="rail">Rail type</option><option value="w3">What3Words</option></select></div>
-            <div><label>Asset type</label><select id="assetTypeFilter"><option value="">All asset types</option>${['Switch','Crossing','IRJ','Ballast','Rail','Miscellaneous'].map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div>
+            <div><label>Asset type</label><select id="assetTypeFilter"><option value="">All asset types</option>${['Switch','Crossing','IRJ','Ballast','Rail','Bearer','Sleeper','Miscellaneous'].map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div>
           </div>
           <div id="af351SearchResults" class="af351-search-results" hidden></div>
         </div>
@@ -1099,10 +1124,10 @@ Please refresh after the newest deployment is available.`):'The central server c
     $('#q').oninput=e=>{state.search.q=e.target.value; const pp=state.patches.find(x=>String(x.id)===String(state.currentPatchId)); const ii=pp?patchInventory(pp.id):{accessPoints:[]}; const rows=(ii.accessPoints||[]).filter(a=>accessMatches(a,state.search.q,state.search.mode,state.search.assetType)); const box=$('#homeResults'); if(box) box.innerHTML=rows.length?rows.map(a=>accessCard(a)).join(''):`<div class="card empty"><b>No access points found</b><span>Try another search.</span></div>`; renderSearchSuggestions();};
     $('#searchMode').onchange=e=>{state.search.mode=e.target.value;renderHome()}; $('#assetTypeFilter').onchange=e=>{state.search.assetType=e.target.value;renderHome()};
     $('#patchSelect')?.addEventListener('change',e=>{state.currentPatchId=e.target.value;state.search={q:'',mode:'all',assetType:''};renderHome()});
-    $('#addAccessBtn')?.addEventListener('click',()=>openAccess()); $('#myRequestsHeroBtn')?.addEventListener('click',()=>openMyRequestsView()); $('#historyBtn').onclick=()=>{state.currentView='history';renderHistory()}; $('#printInventoryBtn').onclick=()=>printInventory(state.currentPatchId);
+    $('#addAccessBtn')?.addEventListener('click',()=>openAccess()); $('#manifestImportBtn')?.addEventListener('click',openManifestImport); $('#myRequestsHeroBtn')?.addEventListener('click',()=>openMyRequestsView()); $('#historyBtn').onclick=()=>{state.currentView='history';renderHistory()}; $('#printInventoryBtn').onclick=()=>printInventory(state.currentPatchId);
     $('#myRequestsBtn')?.addEventListener('click',()=>openMyRequestsView());
     $('#sideHome')?.addEventListener('click',()=>renderHome()); $('#sideHistory')?.addEventListener('click',()=>{state.currentView='history';renderHistory()}); $('#sideProfile')?.addEventListener('click',()=>{state.currentView='profile';renderProfile()}); $('#sideSearch')?.addEventListener('click',()=>$('#q')?.focus());
-    $('#sideAdmin')?.addEventListener('click',()=>{state.currentView='admin';renderAdmin()}); $('#sideApprovals')?.addEventListener('click',()=>openApprovals().catch(e=>alert(e.message))); $('#sideRemovals')?.addEventListener('click',()=>openRemovalRequests().catch(e=>alert(e.message))); $('#sideRequests')?.addEventListener('click',()=>openMyRequestsView());
+    $('#sideAdmin')?.addEventListener('click',()=>{state.currentView='admin';renderAdmin()}); $('#sideManifest')?.addEventListener('click',openManifestImport); $('#sideApprovals')?.addEventListener('click',()=>openApprovals().catch(e=>alert(e.message))); $('#sideRemovals')?.addEventListener('click',()=>openRemovalRequests().catch(e=>alert(e.message))); $('#sideRequests')?.addEventListener('click',()=>openMyRequestsView());
     document.querySelectorAll('[data-open-access]').forEach(b=>b.onclick=()=>renderAccessDetail(state.currentPatchId,b.dataset.openAccess));
     document.querySelectorAll('[data-edit-access]').forEach(b=>b.onclick=()=>openAccess(b.dataset.editAccess));
   }
@@ -1221,8 +1246,87 @@ Please refresh after the newest deployment is available.`):'The central server c
 
   function normaliseW3(v){const s=String(v||'').trim(); if(!s)return ''; return s.startsWith('///')?s:`///${s.replace(/^\/*/,'').replace(/\s+/g,'.')}`;}
 
+
+  async function af360LoadScript(src, globalName){
+    if(window[globalName]) return window[globalName];
+    await new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=src;el.async=true;el.onload=resolve;el.onerror=()=>reject(new Error('Could not load document-processing library.'));document.head.appendChild(el);});
+    return window[globalName];
+  }
+  function af360GuessType(line){
+    const s=line.toLowerCase();
+    if(/\bbearer\b/.test(s)) return 'Bearer';
+    if(/\bsleeper\b/.test(s)) return 'Sleeper';
+    if(/\bballast\b/.test(s)) return 'Ballast';
+    if(/\birj\b|glued joint|manufactured joint|rail joint/.test(s)) return 'IRJ';
+    if(/\bcrossing\b|diamond crossing|single slip|double slip/.test(s)) return 'Crossing';
+    if(/\bswitch\b|\bpoint\b/.test(s)) return 'Switch';
+    if(/\brail\b|\b56e1\b|\b54e1\b|\bcen60\b/.test(s)) return 'Rail';
+    return 'Miscellaneous';
+  }
+  function af360ExtractNumber(line, pattern){const m=line.match(pattern); return m?m[1]:'';}
+  function af360ParseManifest(text){
+    const lines=String(text||'').split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
+    const out=[];
+    for(const line of lines){
+      if(line.length<8) continue;
+      const materialNumber=af360ExtractNumber(line,/^(\d{6,})\b/);
+      const type=af360GuessType(line);
+      const hasMaterial=!!materialNumber;
+      const likely=/\b(bearer|sleeper|ballast|rail|irj|switch|crossing|point)\b/i.test(line);
+      if(!hasMaterial && !likely) continue;
+      const lenM=line.match(/(\d+(?:\.\d+)?)\s*(mm|m|ft)\b/i);
+      const length=lenM?Number(lenM[1]):''; const lengthUnit=lenM?lenM[2].toLowerCase():'';
+      const materialType=/\b(concrete|wood|steel|composite)\b/i.exec(line)?.[1]||'';
+      const nums=[...line.matchAll(/\b(\d+(?:\.\d+)?)\s*(?:EA|EACH|NOS?|NO\.?|TONNES?|T)?\b/gi)].map(m=>Number(m[1])).filter(Number.isFinite);
+      const quantity=nums.length?nums[nums.length>=2?nums.length-2:nums.length-1]:1;
+      let desc=line.replace(/^\d{6,}\s*/,'').replace(/\b\d+(?:\.\d+)?\s*(?:EA|EACH|NOS?|NO\.?|TONNES?|T)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+      if(!desc) desc=line;
+      let ballastAmount='';
+      if(type==='Ballast'){const bm=line.match(/(\d+(?:\.\d+)?)\s*(?:t|tonnes?)\b/i);ballastAmount=bm?Number(bm[1]):(Number.isFinite(quantity)?quantity:'');}
+      const item={id:uid(),type,description:desc,materialNumber,quantity:Number.isFinite(quantity)?quantity:1,amount:Number.isFinite(quantity)?quantity:1,length,lengthUnit,materialType,ballastAmountTons:ballastAmount,sc:af360ExtractNumber(line,/\b(?:SC|SC\s*No\.?)[\s:#-]*(\d+)\b/i),points:af360ExtractNumber(line,/\b(?:Point|Points)\s*[:#-]?\s*([A-Za-z0-9-]+)\b/i),railType:af360ExtractNumber(line,/\b(56E1|54E1|CEN60)\b/i),sourceLine:line,needsReview:(type==='Miscellaneous'||(type==='Bearer'||type==='Sleeper')&&!materialType||type==='Rail'&&!length||type==='Switch'&&!item.sc)};
+      out.push(item);
+    }
+    const grouped=[]; const map=new Map();
+    for(const item of out){const key=[item.materialNumber,item.type,item.description,item.length,item.lengthUnit,item.materialType].join('|'); if(map.has(key)){map.get(key).quantity+=(Number(item.quantity)||1);map.get(key).amount=map.get(key).quantity;} else {map.set(key,item);grouped.push(item);}}
+    return grouped.slice(0,100);
+  }
+  async function af360ExtractDocument(file, progressEl){
+    const setp=(txt,pct)=>{if(progressEl)progressEl.innerHTML=`<div class="af360-step"><span class="dot">✓</span>${esc(txt)}</div><div style="height:8px;background:#d7e5ef;border-radius:99px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#ffd000"></div></div>`;};
+    if(file.type==='application/pdf' || /\.pdf$/i.test(file.name)){
+      setp('Reading PDF…',15);
+      const pdfjs=await af360LoadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs','pdfjsLib');
+      pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
+      const data=await file.arrayBuffer(); const pdf=await pdfjs.getDocument({data}).promise; let text='';
+      for(let n=1;n<=Math.min(pdf.numPages,5);n++){const page=await pdf.getPage(n);const c=await page.getTextContent();text+=c.items.map(x=>x.str).join(' ')+'\n';setp(`Reading page ${n} of ${pdf.numPages}…`,15+Math.round(n/Math.min(pdf.numPages,5)*45));}
+      if(text.trim().length>40){setp('Identifying assets…',70);return text;}
+      setp('PDF appears scanned — running OCR…',55);
+      const T=await af360LoadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','Tesseract');
+      let ocrText='';
+      for(let n=1;n<=Math.min(pdf.numPages,3);n++){const page=await pdf.getPage(n);const viewport=page.getViewport({scale:1.6});const canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;const r=await T.recognize(canvas,'eng',{logger:m=>{if(m.status==='recognizing text')setp(`OCR page ${n}…`,55+Math.round((m.progress||0)*25));}});ocrText+=r.data.text+'\n';}
+      return ocrText;
+    }
+    setp('Preparing image OCR…',15);
+    const T=await af360LoadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','Tesseract');
+    const r=await T.recognize(file,'eng',{logger:m=>{if(m.status==='recognizing text')setp('Reading document…',25+Math.round((m.progress||0)*55));}});return r.data.text||'';
+  }
+  function openManifestImport(){
+    if(!isAdmin()) return alert('Only Owners and Patch Admins can import manifests.');
+    const aps=patchInventory(state.currentPatchId).accessPoints||[];
+    $('#sheet').innerHTML=`<div class="af-import-card"><h2>Import Manifest</h2><p class="small">Upload a delivery note or manifest. Asset Finder will extract and classify the materials before you assign them.</p><input id="manifestFile" type="file" accept="application/pdf,image/*"><div id="manifestProgress" style="margin:12px 0"></div><div id="manifestReview"></div><div class="actions"><button type="button" class="btn light" id="cancelManifest">Cancel</button></div></div>`;
+    $('#modal').classList.remove('hidden'); $('#cancelManifest').onclick=closeModal;
+    $('#manifestFile').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;const review=$('#manifestReview');try{const text=await af360ExtractDocument(file,$('#manifestProgress'));const items=af360ParseManifest(text);if(!items.length)throw new Error('No likely asset lines were detected. Try a clearer PDF/photo.');renderManifestReview(items,aps,file.name);}catch(err){review.innerHTML=`<div class="notice" style="border-color:#c93434;color:#7d2020;background:#fff1f1">${esc(err.message||'Could not read document.')}</div>`;}};
+  }
+  function renderManifestReview(items,aps,fileName){
+    const accessOpts=aps.map(a=>`<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+    $('#manifestReview').innerHTML=`<div class="card"><div class="title">Detected assets</div><div class="small">${esc(fileName)} · ${items.length} grouped asset line${items.length===1?'':'s'}</div><div class="af360-import-toolbar"><label style="font-weight:800">Assign all to <select id="manifestBulkAccess"><option value="">Choose access point</option>${accessOpts}</select></label><button class="btn secondary" id="manifestApplyBulk">Apply to all</button></div><div class="af360-import-list">${items.map((it,i)=>`<div class="af360-import-row ${it.needsReview?'needs-review':''}" data-item="${i}"><label style="display:flex;gap:8px;align-items:center;font-weight:900"><input type="checkbox" class="manifest-check" checked> ${esc(it.type)} · ${esc(it.description)}</label><div class="small">Material ${esc(it.materialNumber||'—')} · Qty ${esc(it.quantity)}${it.length?` · ${esc(it.length)} ${esc(it.lengthUnit)}`:''}${it.materialType?` · ${esc(it.materialType)}`:''}</div><div class="mini-grid"><select class="manifest-type">${['Switch','Crossing','IRJ','Ballast','Rail','Bearer','Sleeper','Miscellaneous'].map(t=>`<option ${it.type===t?'selected':''}>${t}</option>`).join('')}</select><input class="manifest-amount" type="number" min="0" step="0.01" value="${esc(it.amount||it.quantity||1)}" placeholder="Amount"><select class="manifest-access"><option value="">Assign access point</option>${accessOpts}</select></div><div class="mini-grid"><input class="manifest-material" value="${esc(it.materialType||'')}" placeholder="Concrete / Wood / Steel / Composite"><input class="manifest-length" value="${esc(it.length||'')}" placeholder="Length"><select class="manifest-unit"><option value="">Unit</option><option ${it.lengthUnit==='mm'?'selected':''}>mm</option><option ${it.lengthUnit==='m'?'selected':''}>m</option><option ${it.lengthUnit==='ft'?'selected':''}>ft</option></select></div></div>`).join('')}</div><div class="actions" style="margin-top:12px"><button type="button" class="btn light" id="manifestCancel2">Cancel</button><button type="button" class="btn primary" id="manifestAdd">Add selected to inventory</button></div></div>`;
+    $('#manifestCancel2').onclick=closeModal; $('#manifestBulkAccess').onchange=()=>{}; $('#manifestApplyBulk').onclick=()=>{const v=$('#manifestBulkAccess').value;if(!v)return alert('Choose an access point first.');document.querySelectorAll('.manifest-access').forEach(x=>x.value=v);}; $('#manifestAdd').onclick=()=>commitManifestImport(items);
+  }
+  async function commitManifestImport(items){
+    const patchId=state.currentPatchId; const rows=[...document.querySelectorAll('.af360-import-row')].filter(r=>r.querySelector('.manifest-check')?.checked); if(!rows.length)return alert('Select at least one detected asset.');
+    try{await mutateInventory(patchId,inv=>{for(const row of rows){const i=Number(row.dataset.item),src=items[i];const type=row.querySelector('.manifest-type')?.value||src.type;const accessId=row.querySelector('.manifest-access')?.value;if(!accessId)throw new Error(`Choose an access point for ${src.description}.`);const amount=Number(row.querySelector('.manifest-amount')?.value||src.quantity||1);const materialType=row.querySelector('.manifest-material')?.value?.trim()||src.materialType||'';const length=Number(row.querySelector('.manifest-length')?.value||src.length||0);const unit=row.querySelector('.manifest-unit')?.value||src.lengthUnit||'';const ap=inv.accessPoints.find(a=>String(a.id)===String(accessId));if(!ap)throw new Error('Access point not found.');const asset={id:uid(),type,status:'Stored',description:src.description,materialNumber:src.materialNumber||'',quantity:amount,amount,materialType,length,lengthUnit:unit,sc:src.sc||'',points:src.points||'',railType:src.railType||'',ballastAmountTons:type==='Ballast'?amount:undefined,importSource:'Manifest import',importedAt:new Date().toISOString(),needsReview:!!src.needsReview};(ap.assets ||= []).push(asset);}});closeModal();renderHome();alert('Manifest assets added to the selected access points.');}catch(e){alert(e.message||'Could not import manifest assets.');}
+  }
   function assetTypeOptions(selected=''){
-    const types=['Switch','Crossing','IRJ','Ballast','Rail','Miscellaneous'];
+    const types=['Switch','Crossing','IRJ','Ballast','Rail','Bearer','Sleeper','Miscellaneous'];
     return `<option value="">Select asset type</option>${types.map(t=>`<option value="${esc(t)}" ${selected===t?'selected':''}>${esc(t)}</option>`).join('')}`;
   }
 
@@ -1251,6 +1355,10 @@ Please refresh after the newest deployment is available.`):'The central server c
       <div class="field"><label>Rail Length *</label><div style="display:grid;grid-template-columns:1fr 120px;gap:8px"><input id="railLength" inputmode="decimal" value="${esc(x.railLength||'')}" required><select id="railLengthUnit" required><option value="m" ${(!x.railLengthUnit||x.railLengthUnit==='m')?'selected':''}>m</option><option value="ft" ${x.railLengthUnit==='ft'?'selected':''}>ft</option><option value="mm" ${x.railLengthUnit==='mm'?'selected':''}>mm</option></select></div></div>
       <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
       <div class="field"><label>IRJ Type *</label><select id="irjType" required><option value="">Select IRJ type</option>${['4 Hole Glued','4 Hole Manufactured','6 Hole Glued','6 Hole Manufactured'].map(t=>`<option value="${t}" ${x.irjType===t?'selected':''}>${t}</option>`).join('')}</select></div>`;
+    if(type==='Bearer' || type==='Sleeper') return `
+      <div class="field"><label>Amount *</label><input id="materialAmount" inputmode="decimal" value="${esc(x.amount??x.quantity??'')}" min="0" step="1" required></div>
+      <div class="field"><label>${type} Type *</label><select id="materialType" required><option value="">Select type</option>${['Concrete','Wood','Steel','Composite'].map(t=>`<option value="${t}" ${x.materialType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Length *</label><div style="display:grid;grid-template-columns:1fr 120px;gap:8px"><input id="materialLength" inputmode="decimal" value="${esc(x.length??x.railLength??'')}" required><select id="materialLengthUnit" required><option value="m" ${(!x.lengthUnit||x.lengthUnit==='m')?'selected':''}>m</option><option value="ft" ${x.lengthUnit==='ft'?'selected':''}>ft</option><option value="mm" ${x.lengthUnit==='mm'?'selected':''}>mm</option></select></div></div>`;
     if(type==='Ballast') return `<div class="field full"><label>Amount (tonnes) *</label><input id="ballastAmountTons" inputmode="decimal" value="${esc(x.ballastAmountTons??'')}" min="0" step="0.01" placeholder="e.g. 10" required></div>`;
     if(type==='Miscellaneous') return `
       <div class="field full"><label>What is the asset? *</label><textarea id="miscDetails" required>${esc(x.miscDetails||'')}</textarea></div>`;
@@ -1260,16 +1368,16 @@ Please refresh after the newest deployment is available.`):'The central server c
   function readAssetDynamicFields(){
     const type=$('#atype')?.value||'';
     const get=v=>document.querySelector(v)?.value?.trim()||'';
-    const data={type,sc:get('#asc'),description:get('#adesc'),points:get('#apoints'),railType:get('#arail'),railLength:get('#railLength'),railLengthUnit:get('#railLengthUnit'),railWeight:get('#railWeight'),switchHand:document.querySelector('input[name="switchHand"]:checked')?.value||'',stockLength:get('#stockLength'),switchLength:get('#switchLength'),switchType:get('#switchType'),crossingType:get('#crossingType'),irjType:get('#irjType'),ballastAmountTons:get('#ballastAmountTons'),miscDetails:get('#miscDetails')};
+    const data={type,sc:get('#asc'),description:get('#adesc'),points:get('#apoints'),railType:get('#arail'),railLength:get('#railLength'),railLengthUnit:get('#railLengthUnit'),railWeight:get('#railWeight'),switchHand:document.querySelector('input[name="switchHand"]:checked')?.value||'',stockLength:get('#stockLength'),switchLength:get('#switchLength'),switchType:get('#switchType'),crossingType:get('#crossingType'),irjType:get('#irjType'),materialAmount:get('#materialAmount'),materialType:get('#materialType'),materialLength:get('#materialLength'),materialLengthUnit:get('#materialLengthUnit'),ballastAmountTons:get('#ballastAmountTons'),miscDetails:get('#miscDetails')};
     if(!type) throw new Error('Please select an asset type.');
-    if(type!=='Ballast' && type!=='Miscellaneous' && !data.sc) throw new Error('SC number is required.');
+    if(!['Ballast','Bearer','Sleeper','Miscellaneous'].includes(type) && !data.sc) throw new Error('SC number is required.');
     if(type==='Switch' && (!data.points||!data.railType||!data.switchHand||!data.stockLength||!data.switchLength||!data.switchType)) throw new Error('Please complete all Switch fields.');
     if(type==='Rail' && (!data.railType||!data.railLength||!data.railLengthUnit||!data.railWeight)) throw new Error('Please complete all Rail fields.');
     if(type==='Crossing' && (!data.points||!data.crossingType||!data.railWeight)) throw new Error('Please complete all Crossing fields.');
     if(type==='IRJ' && (!data.railLength||!data.railLengthUnit||!data.railType||!data.irjType)) throw new Error('Please complete all IRJ fields.');
     if(type==='Ballast' && !(Number(data.ballastAmountTons)>0)) throw new Error('Ballast amount must be greater than 0 tonnes.');
     if(type==='Miscellaneous' && !data.miscDetails) throw new Error('Please describe the miscellaneous asset.');
-    if(type==='Ballast') data.ballastAmountTons=Number(data.ballastAmountTons);
+    if(type==='Bearer'||type==='Sleeper'){ if(!(Number(data.materialAmount)>0) || !data.materialType || !(Number(data.materialLength)>0) || !data.materialLengthUnit) throw new Error(`Please complete all ${type} fields.`); data.materialAmount=Number(data.materialAmount); data.materialLength=Number(data.materialLength); data.length=data.materialLength; data.lengthUnit=data.materialLengthUnit; data.quantity=data.materialAmount; data.amount=data.materialAmount; } if(type==='Ballast') data.ballastAmountTons=Number(data.ballastAmountTons);
     return data;
   }
 
@@ -1306,6 +1414,10 @@ Please refresh after the newest deployment is available.`):'The central server c
         switchType:$('#switchType')?.value||'',
         crossingType:$('#crossingType')?.value||'',
         irjType:$('#irjType')?.value||'',
+        materialAmount:$('#materialAmount')?.value||'',
+        materialType:$('#materialType')?.value||'',
+        materialLength:$('#materialLength')?.value||'',
+        materialLengthUnit:$('#materialLengthUnit')?.value||'m',
         ballastAmountTons:$('#ballastAmountTons')?.value||'',
         miscDetails:$('#miscDetails')?.value||''
       };
