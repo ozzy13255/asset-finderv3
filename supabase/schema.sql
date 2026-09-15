@@ -216,3 +216,11 @@ create policy fly_tip_reports_update on public.fly_tip_reports for update using 
   public.current_role()='owner'
   or (public.current_role()='patch_admin' and public.can_access_patch(patch_id))
 );
+
+-- v3.8.4 Fly Tip permanent resolution deletion policy
+alter table public.fly_tip_reports enable row level security;
+drop policy if exists fly_tip_reports_delete on public.fly_tip_reports;
+create policy fly_tip_reports_delete on public.fly_tip_reports for delete using (
+  public.current_role()='owner'
+  or (public.current_role()='patch_admin' and public.can_access_patch(patch_id))
+);
