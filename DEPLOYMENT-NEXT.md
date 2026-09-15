@@ -1,21 +1,21 @@
-Asset Finder v3.8.4
+# Asset Finder v3.8.8 — Deployment
 
-Responsive mobile layout improvements plus delivery-note/manifest import with asset auto-detection, review-before-inventory workflow, robust grouping of identical manifest assets, one-at-a-time Bearer/Sleeper removal, and improved measurement/unit layout.
+## Deploy
 
+Upload/deploy the contents of `app/` to the existing Asset Finder site over HTTPS.
 
-Fly tip reporting: users can submit a fly tip against an access point with either What3Words or a map pin, plus a description and optional photos. Admins get a separate Fly Tip Reports queue with New / In Progress / Resolved / Reopen controls.
+## Supabase
 
-Database: apply `supabase/migrations/20260915_fly_tip_reports.sql` to the existing Supabase project before using the feature.
+Keep the complete `supabase/migrations/` history. Apply only migrations that are not already recorded as applied in the target Supabase project.
 
+The live database should contain the `public.fly_tip_reports` table and its RLS policies. The permanent-delete policy must also be present so authorised patch admins/owners can complete and delete Fly Tip reports.
 
-## Fly Tip Reporting
-Apply `supabase/migrations/20260915_fly_tip_reports.sql` to the existing Supabase database before testing fly tip submissions. It creates the `fly_tip_reports` table, indexes and RLS policies.
+## PWA
 
+`app/manifest.webmanifest` and `app/sw.js` make Asset Finder installable as an app on Microsoft Edge, Chrome, Android and iPhone/iPad.
 
-## v3.8.4 PWA
-The app now includes `app/manifest.webmanifest`, `app/sw.js`, and install icons. Deploy the full `app/` directory over HTTPS. Edge/Chrome should then offer **Install this site as an app**. iPhone/iPad can use Safari → Share → Add to Home Screen.
+The header **↻ Refresh** button refreshes live Supabase data and checks for a newer PWA version. The service worker handles application-shell updates.
 
-The service worker caches the local app shell but does not cache Supabase API requests, so live inventory/report changes still require connectivity.
+## Important
 
-## v3.8.4
-Deploy the updated app files and run `supabase/migrations/20260915_v383_header_refresh.sql` so the live version marker reports 3.8.4. The header ↻ button refreshes live data and checks for a new PWA build.
+Supabase data is deliberately not cached by the service worker. Offline mode is limited to the application shell; live inventory, approvals, removals and Fly Tip operations still require connectivity.

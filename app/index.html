@@ -291,7 +291,7 @@ body,#view{color:#081f35!important;}
 @media(max-width:760px){.af38-admin-head{align-items:flex-start;flex-direction:column}.af38-admin-grid{grid-template-columns:1fr}.af38-admin-card{min-height:120px}}
 </style>
 <style id="af387-readable-theme">
-/* v3.8.7: stronger readable theme and admin form sizing */
+/* v3.8.8: stronger readable theme and admin form sizing */
 .af35-brand .txt strong{color:#ffffff!important;font-size:22px!important;font-weight:950!important;line-height:1.05!important;text-shadow:0 1px 10px rgba(0,0,0,.35);}
 .af35-brand .txt small{color:#d7e8f6!important;font-weight:650!important;}
 .af38-admin-head .af35-kicker{color:#ffd84d!important;font-weight:950!important;}
@@ -573,7 +573,7 @@ input,select,textarea{background:#f7f9fb!important;color:#102338!important;borde
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.8.7';
+  const APP_VERSION = '3.8.8';
   const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMobileLayout = () => window.innerWidth <= 700;
   document.documentElement.classList.toggle('af-ios', IS_IOS);

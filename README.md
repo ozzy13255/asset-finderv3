@@ -1,20 +1,42 @@
-Asset Finder v3.8.4
+# Asset Finder v3.8.8
 
-Responsive mobile layout improvements plus delivery-note/manifest import with asset auto-detection, review-before-inventory workflow, robust grouping of identical manifest assets, one-at-a-time Bearer/Sleeper removal, and improved measurement/unit layout.
+Railway access points and asset register platform for OGRT.
 
+## Current features
 
-Fly tip reporting: users can submit a fly tip against an access point with either What3Words or a map pin, plus a description and optional photos. Admins get a separate Fly Tip Reports queue with New / In Progress / Resolved / Reopen controls.
+- Access-point and asset register
+- SC number, points, asset and location search
+- Delivery-note / manifest import with OCR-assisted asset detection
+- Review-before-inventory workflow
+- Automatic grouping of identical manifest assets
+- One-at-a-time Bearer and Sleeper removal
+- Asset approval and removal request workflows
+- Fly Tip reporting with access point, What3Words or map pin, description and photos
+- Admin Fly Tip workflow with **New** and **In Progress** sections
+- **Complete and Delete** permanently removes completed Fly Tip reports
+- Live header refresh button
+- Installable PWA for Edge, Chrome, Android and iPhone/iPad
+- PWA service-worker update handling
+- Responsive desktop and mobile UI
+- Improved text contrast and admin form readability
 
-Database: apply `supabase/migrations/20260915_fly_tip_reports.sql` to the existing Supabase project before using the feature.
+## Deployment
 
+Deploy the complete `app/` directory over HTTPS.
 
-## v3.8.4 — PWA installation
-- Added a standards-based web app manifest with install metadata and 192px/512px icons.
-- Added a service worker and app-shell caching so Edge/Chrome/Android can install Asset Finder as an app and the shell can reopen offline.
-- Added iPhone/iPad web-app metadata and Apple touch icon support.
-- Live Supabase API requests are deliberately not cached; inventory and report operations still require an internet connection.
+For an existing Supabase project, apply any migrations in `supabase/migrations/` that have not already been applied. The Fly Tip feature requires `20260915_fly_tip_reports.sql`; permanent Fly Tip deletion uses the later Fly Tip deletion migration.
 
-## v3.8.4
-- Added a Refresh (↻) button to the main header on desktop, Android and iPhone.
-- Refresh reloads live Supabase data and checks for a newer PWA service worker.
-- Updated service-worker cache version to v3.8.4.
+## PWA
+
+The app includes:
+
+- `app/manifest.webmanifest`
+- `app/sw.js`
+- 192px and 512px install icons
+- iPhone/iPad web-app metadata
+
+Supabase API requests are not cached, so live inventory and report operations require an internet connection.
+
+## Version
+
+**3.8.8** — readability and admin UI cleanup build.
