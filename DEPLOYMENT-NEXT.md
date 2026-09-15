@@ -1,4 +1,4 @@
-Asset Finder v3.7.0
+Asset Finder v3.8.0
 
 Responsive mobile layout improvements plus delivery-note/manifest import with asset auto-detection, review-before-inventory workflow, robust grouping of identical manifest assets, one-at-a-time Bearer/Sleeper removal, and improved measurement/unit layout.
 
@@ -10,3 +10,9 @@ Database: apply `supabase/migrations/20260915_fly_tip_reports.sql` to the existi
 
 ## Fly Tip Reporting
 Apply `supabase/migrations/20260915_fly_tip_reports.sql` to the existing Supabase database before testing fly tip submissions. It creates the `fly_tip_reports` table, indexes and RLS policies.
+
+
+## v3.8.0 PWA
+The app now includes `app/manifest.webmanifest`, `app/sw.js`, and install icons. Deploy the full `app/` directory over HTTPS. Edge/Chrome should then offer **Install this site as an app**. iPhone/iPad can use Safari → Share → Add to Home Screen.
+
+The service worker caches the local app shell but does not cache Supabase API requests, so live inventory/report changes still require connectivity.
