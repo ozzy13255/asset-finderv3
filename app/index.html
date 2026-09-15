@@ -527,7 +527,7 @@ input,select,textarea{background:#f7f9fb!important;color:#102338!important;borde
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.8.4';
+  const APP_VERSION = '3.8.5';
   const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMobileLayout = () => window.innerWidth <= 700;
   document.documentElement.classList.toggle('af-ios', IS_IOS);
@@ -1773,8 +1773,8 @@ Please refresh after the newest deployment is available.`):'The central server c
     const patchName=state.patches.find(p=>String(p.id)===String(r.patch_id))?.name || '—';
     const location=`${r.what3words?`What3Words ${esc(r.what3words)}`:''}${r.what3words&&validCoords(r.latitude,r.longitude)?' · ':''}${validCoords(r.latitude,r.longitude)?`${esc(Number(r.latitude).toFixed(6))}, ${esc(Number(r.longitude).toFixed(6))}`:''}` || '—';
     const actions=inProgress
-      ? `<button class="btn primary" data-flytip-status="resolved" data-flytip-id="${esc(r.id)}">Mark Resolved</button><button class="btn light" data-flytip-status="new" data-flytip-id="${esc(r.id)}">Return to New</button>`
-      : `<button class="btn secondary" data-flytip-status="in_progress" data-flytip-id="${esc(r.id)}">Mark In Progress</button><button class="btn primary" data-flytip-status="resolved" data-flytip-id="${esc(r.id)}">Mark Resolved</button>`;
+      ? `<button class="btn primary" data-flytip-status="resolved" data-flytip-id="${esc(r.id)}">Complete and Delete</button><button class="btn light" data-flytip-status="new" data-flytip-id="${esc(r.id)}">Return to New</button>`
+      : `<button class="btn secondary" data-flytip-status="in_progress" data-flytip-id="${esc(r.id)}">Mark In Progress</button><button class="btn primary" data-flytip-status="resolved" data-flytip-id="${esc(r.id)}">Complete and Delete</button>`;
     return `<div class="card af-flytip-card ${inProgress?'af-flytip-inprogress':''}"><div class="cardhead"><div><div class="title">${esc(r.access_point_name||'Access Point')}</div><div class="sub">${esc(r.created_at?new Date(r.created_at).toLocaleString():'—')} · Patch: ${esc(patchName)}</div><div class="sub">Location: ${location}</div><div class="sub" style="margin-top:8px">${esc(r.description||'')}</div>${r.photos?.length?`<div class="photo-grid">${r.photos.slice(0,5).map(p=>`<img class="asset-photo" src="${esc(p)}" alt="Fly tip photo">`).join('')}</div>`:''}</div><div>${flyTipStatusBadge(r.status)}</div></div><div class="actions">${actions}</div></div>`;
   }
   function renderFlyTipReports(){
@@ -1789,7 +1789,11 @@ Please refresh after the newest deployment is available.`):'The central server c
     if(!isAdmin()) return;
     try{
       if(status==='resolved'){
-        await api(`/rest/v1/fly_tip_reports?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+        if(!confirm('Complete this fly tip report and permanently delete it? This cannot be undone.')) return;
+        const deleted=await api(`/rest/v1/fly_tip_reports?id=eq.${encodeURIComponent(id)}&select=id`,{method:'DELETE',headers:{Prefer:'return=representation'}});
+        if(!Array.isArray(deleted) || deleted.length===0){
+          throw new Error('The report could not be deleted. The database delete permission has not been applied yet.');
+        }
       }else{
         await api(`/rest/v1/fly_tip_reports?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});
       }
@@ -1965,7 +1969,7 @@ Please refresh after the newest deployment is available.`):'The central server c
         window.location.reload();
       });
       try {
-        const reg = await navigator.serviceWorker.register('./sw.js?v=3.8.4', {scope: './', updateViaCache: 'none'});
+        const reg = await navigator.serviceWorker.register('./sw.js?v=3.8.5', {scope: './', updateViaCache: 'none'});
         const checkForUpdate = () => reg.update().catch(() => {});
         checkForUpdate();
         setInterval(checkForUpdate, 60000);
