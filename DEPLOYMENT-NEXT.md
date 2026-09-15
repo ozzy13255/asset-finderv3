@@ -1,7 +1,12 @@
-# Deploy Asset Finder v3.6.2
+Asset Finder v3.7.0
 
-Replace `/app` and `/supabase` in the existing repository with this build, commit to `main`, and allow Vercel to redeploy.
+Responsive mobile layout improvements plus delivery-note/manifest import with asset auto-detection, review-before-inventory workflow, robust grouping of identical manifest assets, one-at-a-time Bearer/Sleeper removal, and improved measurement/unit layout.
 
-This build fixes manifest grouping so identical materials on the same order are combined into one asset line, supports removing one Bearer/Sleeper at a time, and places the measurement unit directly beside the measurement field on mobile.
 
-The manifest importer uses PDF.js/Tesseract from public CDNs in the browser. No service-role credentials are embedded in the frontend.
+Fly tip reporting: users can submit a fly tip against an access point with either What3Words or a map pin, plus a description and optional photos. Admins get a separate Fly Tip Reports queue with New / In Progress / Resolved / Reopen controls.
+
+Database: apply `supabase/migrations/20260915_fly_tip_reports.sql` to the existing Supabase project before using the feature.
+
+
+## Fly Tip Reporting
+Apply `supabase/migrations/20260915_fly_tip_reports.sql` to the existing Supabase database before testing fly tip submissions. It creates the `fly_tip_reports` table, indexes and RLS policies.
