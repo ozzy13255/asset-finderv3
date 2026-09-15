@@ -290,6 +290,33 @@ body,#view{color:#081f35!important;}
 .af38-admin-title{font-size:28px;font-weight:900;line-height:1.05;margin-top:3px}.af38-admin-sub{color:#c9d9e7;margin-top:6px;font-size:13px}.af38-admin-panel{border:1px solid #2e79aa;border-radius:16px;background:#071d33;padding:16px;margin-bottom:16px}.af38-admin-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#fff;margin-bottom:13px}.af38-admin-total{font-weight:800;font-size:12px;padding:6px 10px;border-radius:999px;background:#ffffff14;border:1px solid #ffffff24}.af38-admin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.af38-admin-card{position:relative;text-align:left;min-height:150px;padding:17px;border-radius:14px;border:1px solid #2e79aa;background:#0b2a44;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:6px;transition:transform .12s ease,box-shadow .12s ease}.af38-admin-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px #0004}.af38-admin-card.approval{border-color:#2688d1}.af38-admin-card.removal{border-color:#8d9b36}.af38-admin-card.flytip{border-color:#d74444}.af38-admin-icon{font-size:27px}.af38-admin-card-title{font-weight:900;font-size:16px;max-width:90%}.af38-admin-card-sub{font-size:12px;color:#c7d6e4;line-height:1.35;max-width:85%}.af38-admin-count{position:absolute;right:12px;top:12px;min-width:30px;height:30px;padding:0 8px;border-radius:999px;background:#f33b3b;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;border:2px solid #071d33}.af-flytip-section{margin:14px 0}.af-flytip-section-title{font-size:17px;font-weight:900;margin:12px 0 8px;padding:9px 12px;border-radius:10px;background:#071d33;border:1px solid #2e79aa;color:#fff}.af-flytip-section-title span{float:right;font-size:12px;padding:3px 8px;border-radius:999px;background:#ffffff18}.af-flytip-progress-section .af-flytip-section-title{border-color:#c59b24;color:#ffe08a}.af-flytip-inprogress{border-color:#c59b24!important;box-shadow:0 0 0 1px #c59b2430 inset}.af-flytip-inprogress .badge.planned{background:#c59b24;color:#111;border-color:#e4c45c}.af38-admin-card.approval .af38-admin-count{background:#1986d1}.af38-admin-card.removal .af38-admin-count{background:#9aab3b}.af38-admin-card.flytip .af38-admin-count{background:#e44a4a}
 @media(max-width:760px){.af38-admin-head{align-items:flex-start;flex-direction:column}.af38-admin-grid{grid-template-columns:1fr}.af38-admin-card{min-height:120px}}
 </style>
+<style id="af387-readable-theme">
+/* v3.8.7: stronger readable theme and admin form sizing */
+.af35-brand .txt strong{color:#ffffff!important;font-size:22px!important;font-weight:950!important;line-height:1.05!important;text-shadow:0 1px 10px rgba(0,0,0,.35);}
+.af35-brand .txt small{color:#d7e8f6!important;font-weight:650!important;}
+.af38-admin-head .af35-kicker{color:#ffd84d!important;font-weight:950!important;}
+.af38-admin-title{color:#ffffff!important;text-shadow:0 1px 10px rgba(0,0,0,.28);}
+.af38-admin-sub{color:#d9e9f5!important;}
+.af38-admin-panel .title{color:#ffffff!important;font-weight:950!important;}
+.af38-admin-panel .sub{color:#d6e7f3!important;}
+.af38-admin-card .af38-admin-card-title{color:#ffffff!important;font-weight:950!important;}
+.af38-admin-card .af38-admin-card-sub{color:#d7e8f6!important;}
+.af38-admin-card .af38-admin-icon{filter:drop-shadow(0 1px 5px rgba(0,0,0,.25));}
+.af38-admin-card .af38-admin-count{color:#ffffff!important;font-weight:950!important;}
+.queue-head .section-title{color:#ffffff!important;font-weight:950!important;text-shadow:0 1px 8px rgba(0,0,0,.25);}
+.queue-head .section-title .pill{color:#ffffff!important;background:#176da4!important;border-color:#59a8d8!important;font-weight:900!important;}
+.af-flytip-section-title{color:#ffffff!important;font-weight:950!important;}
+.af-flytip-section-title span{color:#ffffff!important;font-weight:950!important;}
+.af-flytip-progress-section .af-flytip-section-title{color:#ffe07a!important;}
+.af38-create-user-card{padding:24px!important;min-height:310px;}
+.af38-create-user-card>.title{color:#ffffff!important;font-size:20px!important;font-weight:950!important;margin-bottom:14px;}
+.af38-create-user-card .form.two{grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);column-gap:18px;row-gap:18px;}
+.af38-create-user-card .field label{display:block;color:#d8e9f5!important;font-weight:850!important;line-height:1.25!important;min-height:18px;margin-bottom:6px;}
+.af38-create-user-card .field input,.af38-create-user-card .field select{min-height:48px;width:100%;}
+.af38-create-user-card .actions.full{margin-top:2px;}
+@media(max-width:900px){.af38-create-user-card .form.two{grid-template-columns:1fr;}.af38-create-user-card{min-height:0;padding:20px!important;}}
+@media(max-width:820px){.af35-brand .txt strong{font-size:19px!important;}.af35-brand .txt small{font-size:9px!important;}}
+</style>
 </head>
 <body>
 <div id="cloudGate" style="display:none;position:fixed;inset:0;background:#071a35;z-index:999999;overflow:auto;padding:24px;box-sizing:border-box">
@@ -527,7 +554,7 @@ input,select,textarea{background:#f7f9fb!important;color:#102338!important;borde
   const C = window.ASSET_FINDER_CLOUD || {};
   const API = String(C.supabaseUrl || '').replace(/\/$/, '');
   const ANON = String(C.supabaseAnonKey || '');
-  const APP_VERSION = '3.8.5';
+  const APP_VERSION = '3.8.7';
   const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isMobileLayout = () => window.innerWidth <= 700;
   document.documentElement.classList.toggle('af-ios', IS_IOS);
@@ -1792,7 +1819,7 @@ Please refresh after the newest deployment is available.`):'The central server c
         if(!confirm('Complete this fly tip report and permanently delete it? This cannot be undone.')) return;
         const deleted=await api(`/rest/v1/fly_tip_reports?id=eq.${encodeURIComponent(id)}&select=id`,{method:'DELETE',headers:{Prefer:'return=representation'}});
         if(!Array.isArray(deleted) || deleted.length===0){
-          throw new Error('The report could not be deleted. The database delete permission has not been applied yet.');
+          throw new Error('The report could not be deleted. Please refresh Asset Finder and try again.');
         }
       }else{
         await api(`/rest/v1/fly_tip_reports?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});
@@ -1817,7 +1844,7 @@ Please refresh after the newest deployment is available.`):'The central server c
         <button type="button" class="af38-admin-card flytip" id="flyTipReportsBtn"><span class="af38-admin-icon">🗑</span><span class="af38-admin-card-title">Fly Tip Reports</span><span class="af38-admin-card-sub">View and manage fly tip reports</span><span class="af38-admin-count">${pendingFlyTipCount}</span></button>
       </div></div>
       ${isOwner()?`<div class="card"><div class="title">Patch Management</div>${state.patches.map(p=>`<div class="cardhead" style="margin-top:8px"><div><b>${esc(p.name)}</b></div><div class="actions"><button class="btn light" data-rename-patch="${esc(p.id)}">Rename</button><button class="btn danger" data-delete-patch="${esc(p.id)}">Delete</button></div></div>`).join('')}</div>`:''}
-      <div class="card"><div class="title">Create User</div><form id="createUserForm" class="form two"><div class="field"><label>Name *</label><input name="name" required></div><div class="field"><label>Employee Number *</label><input name="employee_number" required></div><div class="field"><label>Email Address (Login & Recovery) *</label><input name="login_code" type="email" autocomplete="email" required></div><div class="field"><label>Temporary Password *</label><input name="password" minlength="10" required></div><div class="field"><label>Role</label><select name="role" ${isOwner()?'':'disabled'}><option value="user">User</option>${isOwner()?'<option value="patch_admin">Patch Admin</option>':''}</select></div><div class="field"><label>Patch *</label><select name="patch_id" required>${patchOptions}</select></div><div class="actions full"><button class="btn primary">Create User</button></div></form></div>
+      <div class="card af38-create-user-card"><div class="title">Create User</div><form id="createUserForm" class="form two"><div class="field"><label>Name *</label><input name="name" required></div><div class="field"><label>Employee Number *</label><input name="employee_number" required></div><div class="field"><label>Email Address (Login & Recovery) *</label><input name="login_code" type="email" autocomplete="email" required></div><div class="field"><label>Temporary Password *</label><input name="password" minlength="10" required></div><div class="field"><label>Role</label><select name="role" ${isOwner()?'':'disabled'}><option value="user">User</option>${isOwner()?'<option value="patch_admin">Patch Admin</option>':''}</select></div><div class="field"><label>Patch *</label><select name="patch_id" required>${patchOptions}</select></div><div class="actions full"><button class="btn primary">Create User</button></div></form></div>
       <div><div class="section-title">Users</div>${userRows||'<div class="card empty"><b>No other users</b></div>'}</div>`;
     $('#createPatchBtn')?.addEventListener('click',()=>createPatch().catch(e=>alert(e.message)));
     $('#approvalsBtn').onclick=()=>openApprovals().catch(e=>alert(e.message));
@@ -1969,7 +1996,7 @@ Please refresh after the newest deployment is available.`):'The central server c
         window.location.reload();
       });
       try {
-        const reg = await navigator.serviceWorker.register('./sw.js?v=3.8.5', {scope: './', updateViaCache: 'none'});
+        const reg = await navigator.serviceWorker.register('./sw.js?v=3.8.6', {scope: './', updateViaCache: 'none'});
         const checkForUpdate = () => reg.update().catch(() => {});
         checkForUpdate();
         setInterval(checkForUpdate, 60000);
