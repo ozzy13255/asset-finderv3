@@ -1,4 +1,4 @@
-# Asset Finder v3.8.8 — Deployment
+# Asset Finder v3.9.0 — Deployment
 
 ## Deploy
 

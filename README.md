@@ -1,4 +1,4 @@
-# Asset Finder v3.8.8
+# Asset Finder v3.9.0
 
 Railway access points and asset register platform for OGRT.
 
@@ -39,4 +39,4 @@ Supabase API requests are not cached, so live inventory and report operations re
 
 ## Version
 
-**3.8.8** — readability and admin UI cleanup build.
+**3.9.0** — scrap reporting added alongside fly-tip reporting, with live admin queue management.
