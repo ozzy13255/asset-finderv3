@@ -42,7 +42,11 @@ create table if not exists public.asset_approvals (
   status text not null default 'pending' check (status in ('pending','approved','rejected')),
   reviewed_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
-  reviewed_at timestamptz
+  reviewed_at timestamptz,
+  submitted_by_name text,
+  submitted_by_employee_number text,
+  approved_by_name text,
+  approved_by_employee_number text
 );
 
 create table if not exists public.asset_removal_requests (
@@ -180,6 +184,10 @@ create table if not exists public.fly_tip_reports (
   reviewed_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   reviewed_at timestamptz,
+  created_by_name text,
+  created_by_employee_number text,
+  completed_by_name text,
+  completed_by_employee_number text,
   constraint fly_tip_location_required check (
     nullif(trim(coalesce(what3words,'')),'') is not null
     or (latitude is not null and longitude is not null)
@@ -242,6 +250,10 @@ create table if not exists public.scrap_reports (
   reviewed_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   reviewed_at timestamptz,
+  created_by_name text,
+  created_by_employee_number text,
+  completed_by_name text,
+  completed_by_employee_number text,
   constraint scrap_location_required check (
     nullif(trim(coalesce(what3words,'')),'') is not null
     or (latitude is not null and longitude is not null)

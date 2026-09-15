@@ -1,42 +1,13 @@
-# Asset Finder v3.9.0
+# Asset Finder v3.10.0
 
-Railway access points and asset register platform for OGRT.
+Railway access points and asset register platform.
 
-## Current features
-
-- Access-point and asset register
-- SC number, points, asset and location search
-- Delivery-note / manifest import with OCR-assisted asset detection
-- Review-before-inventory workflow
-- Automatic grouping of identical manifest assets
-- One-at-a-time Bearer and Sleeper removal
-- Asset approval and removal request workflows
-- Fly Tip reporting with access point, What3Words or map pin, description and photos
-- Admin Fly Tip workflow with **New** and **In Progress** sections
-- **Complete and Delete** permanently removes completed Fly Tip reports
-- Live header refresh button
-- Installable PWA for Edge, Chrome, Android and iPhone/iPad
-- PWA service-worker update handling
-- Responsive desktop and mobile UI
-- Improved text contrast and admin form readability
+## v3.10.0
+- Added automatic submission and approval attribution for new assets.
+- Pending asset approvals show the submitter.
+- Approved asset cards show Submitted by and Approved by with date/time.
+- Fly Tip and Scrap reports show submitter/handler attribution.
+- Existing Asset Finder PWA, live refresh, OCR/manifest import, bearer/sleeper grouping and reporting features retained.
 
 ## Deployment
-
-Deploy the complete `app/` directory over HTTPS.
-
-For an existing Supabase project, apply any migrations in `supabase/migrations/` that have not already been applied. The Fly Tip feature requires `20260915_fly_tip_reports.sql`; permanent Fly Tip deletion uses the later Fly Tip deletion migration.
-
-## PWA
-
-The app includes:
-
-- `app/manifest.webmanifest`
-- `app/sw.js`
-- 192px and 512px install icons
-- iPhone/iPad web-app metadata
-
-Supabase API requests are not cached, so live inventory and report operations require an internet connection.
-
-## Version
-
-**3.9.0** — scrap reporting added alongside fly-tip reporting, with live admin queue management.
+Deploy the contents of this ZIP to the existing Vercel project. The Supabase migration `20260915_v310_audit_attribution.sql` has already been applied to the connected database.
