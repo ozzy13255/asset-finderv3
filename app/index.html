@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="en">
-<head><meta name="asset-finder-version" content="3.8.4"/>
+<head><meta name="asset-finder-version" content="3.10.1"/><meta name="asset-finder-version" content="3.8.4"/>
 <meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#071a35" name="theme-color"/><meta content="Asset Finder - railway access points and asset register by OGRT" name="description"/>
 <link href="manifest.webmanifest" rel="manifest"/>
@@ -1307,7 +1307,7 @@ Please refresh after the newest deployment is available.`):'The central server c
     const qtyType=['Bearer','Sleeper'];
     const hasUnitQuantity=qtyType.includes(String(x.type||'')) && Number(x.quantity||x.amount||0)>0;
     const quantity=hasUnitQuantity?Number(x.quantity||x.amount||0):0;
-    const controls=isAdmin()?`<button class="btn light" data-edit-asset="${esc(x.id)}">Edit</button><button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Remove Ballast':hasUnitQuantity?`Remove 1 ${esc(x.type)}`:'Remove'}</button>`:pendingRemoval?`<button class="btn light" disabled>Removal awaiting approval</button>`:`<button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Request Ballast Removal':hasUnitQuantity?`Request 1 ${esc(x.type)} Removal`:'Request Asset Removal'}</button>`;
+    const controls=isAdmin()?`<button class="btn light" data-edit-asset="${esc(x.id)}">Edit</button><button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Remove Ballast':hasUnitQuantity?`Remove ${Number(x.quantity||x.amount||0)>1?'Bulk ':''}${esc(x.type)}`:'Remove'}</button>`:pendingRemoval?`<button class="btn light" disabled>Removal awaiting approval</button>`:`<button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Request Ballast Removal':hasUnitQuantity?`Request ${Number(x.quantity||x.amount||0)>1?'Bulk ':''}${esc(x.type)} Removal`:'Request Asset Removal'}</button>`;
     const detail=[`SC: ${esc(x.sc||'—')}`,x.points?`Points: ${esc(x.points)}`:'',hasUnitQuantity?`Qty: ${esc(quantity)}`:'',x.type==='Ballast'?`Amount: ${esc(x.ballastAmountTons)} t`:(x.railLength?`Rail length: ${esc(x.railLength)} ${esc(x.railLengthUnit||'m')}`:''),x.length?`Length: ${esc(x.length)} ${esc(x.lengthUnit||'')}`:'',x.railType?`Rail: ${esc(x.railType)}`:''].filter(Boolean).join(' · ');
     return `<div class="card ${highlight?'af351-highlight':''}" id="asset-${esc(x.id)}"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">${detail}</div><div class="meta">${statusBadge(x.status)} ${x.railType?`<span class="badge planned">${esc(x.railType)}</span>`:''}${pendingRemoval?` <span class="badge planned">Removal awaiting approval</span>`:''}</div></div><div class="actions">${controls}</div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}<div class="af-audit">${x.submittedByName?`<div><b>Submitted by:</b> ${esc(x.submittedByName)}${x.submittedByEmployeeNumber?` · ${esc(x.submittedByEmployeeNumber)}`:''}${x.submittedAt?` · ${esc(new Date(x.submittedAt).toLocaleString())}`:''}</div>`:''}${x.approvedByName?`<div><b>Approved by:</b> ${esc(x.approvedByName)}${x.approvedByEmployeeNumber?` · ${esc(x.approvedByEmployeeNumber)}`:''}${x.approvedAt?` · ${esc(new Date(x.approvedAt).toLocaleString())}`:''}</div>`:''}</div>${x.photos?.length?`<div class="photo-grid">${x.photos.map(p=>`<img class="asset-photo" src="${p}" alt="Asset photo">`).join('')}</div>`:''}</div>`;
   }
@@ -1643,32 +1643,45 @@ Please refresh after the newest deployment is available.`):'The central server c
     try{
       const ap=patchInventory(state.currentPatchId).accessPoints.find(x=>String(x.id)===String(aid));const asset=(ap?.assets||[]).find(x=>String(x.id)===String(xid));
       if(!asset)throw new Error('Asset not found.');
-      const workOrderNumber=String(prompt('Enter the Work Order Number for this asset removal:', String(asset.workOrderNumber||''))||'').trim();
-      if(!workOrderNumber)return;
       let removalAmount=null;
-      const unitQuantityType=['Bearer','Sleeper'].includes(String(asset.type||''));
-      if(asset.type==='Ballast'){
+      const assetType=String(asset.type||'');
+      const isBallast=assetType==='Ballast';
+      const quantity=Number(asset.quantity??asset.amount??0);
+      const isBulkAsset=!isBallast && quantity>1;
+
+      if(isBallast){
         const current=Number(asset.ballastAmountTons||0);
         if(!(current>0))throw new Error('This ballast asset has no remaining quantity recorded.');
-        const entered=prompt(`How many tonnes of ballast do you want to remove?\nAvailable: ${current} tonnes`, String(current));
+        const entered=prompt(`How many tonnes of ballast do you want to remove?\nAvailable: ${current} tonnes`,String(current));
         if(entered===null)return;
         removalAmount=Number(String(entered).replace(',','.'));
-        if(!(removalAmount>0) || removalAmount>current) throw new Error(`Enter an amount between 0 and ${current} tonnes.`);
-      } else if(unitQuantityType){
-        const current=Number(asset.quantity||asset.amount||0);
-        if(!(current>0))throw new Error(`This ${asset.type.toLowerCase()} asset has no remaining quantity recorded.`);
+        if(!(removalAmount>0)||removalAmount>current)throw new Error(`Enter an amount between 0 and ${current} tonnes.`);
+      } else if(isBulkAsset){
+        const current=Math.floor(quantity);
+        const entered=prompt(`How many ${assetType.toLowerCase()} units do you want to remove?\nAvailable: ${current}`,String(current));
+        if(entered===null)return;
+        removalAmount=Number(String(entered).replace(',','.'));
+        if(!Number.isInteger(removalAmount)||!(removalAmount>0)||removalAmount>current)throw new Error(`Enter a whole number of units between 1 and ${current}.`);
+      } else if(['Bearer','Sleeper'].includes(assetType)){
+        const current=Number(asset.quantity??asset.amount??0);
+        if(!(current>0))throw new Error(`This ${assetType.toLowerCase()} asset has no remaining quantity recorded.`);
         removalAmount=1;
-        if(current<=1 && !confirm(`Remove the final ${asset.type.toLowerCase()}? It will move to Past History.`)) return;
-        if(current>1 && !confirm(`Remove 1 ${asset.type.toLowerCase()}?\nRemaining after removal: ${current-1}`)) return;
-      } else if(!confirm('Remove this asset? It will move to Past History.')) return;
+        if(!confirm(`Remove 1 ${assetType.toLowerCase()}?\nThis is the final unit and it will move to Past History.`))return;
+      } else if(!confirm('Remove this asset? It will move to Past History.'))return;
+
+      const workOrderNumber=String(prompt('Enter the Work Order Number for this asset removal:',String(asset.workOrderNumber||''))||'').trim();
+      if(!workOrderNumber){ alert('A Work Order Number is required for every asset removal.'); return; }
 
       if(!isAdmin()){
         const requestAsset={...asset};
-        if(asset.type==='Ballast') requestAsset._removalAmountTons=removalAmount;
-        else if(unitQuantityType) requestAsset._removalQuantity=1;
-        await api('/rest/v1/asset_removal_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:state.currentPatchId,access_point_id:aid,access_point_name:ap.name,asset_id:xid,asset_data:{...requestAsset,_workOrderNumber:workOrderNumber,_requestedByName:state.profile.name||'Unknown user',_requestedByEmployeeNumber:state.profile.employee_number||''},requested_by:state.profile.id,status:'pending'})});
-        const msg=asset.type==='Ballast'?`Ballast removal request for ${removalAmount} tonnes submitted for approval.`:unitQuantityType?`Removal request for 1 ${asset.type.toLowerCase()} submitted for approval.`:'Removal request submitted for approval.';
-        alert(msg); if(isAdmin()) await loadAdminData(); else { await loadUserRequests(); renderAccessDetail(state.currentPatchId, state.currentAccessId); } return;
+        if(isBallast)requestAsset._removalAmountTons=removalAmount;
+        else if(isBulkAsset||['Bearer','Sleeper'].includes(assetType))requestAsset._removalQuantity=removalAmount;
+        requestAsset._workOrderNumber=workOrderNumber;
+        requestAsset._requestedByName=state.profile.name||'Unknown user';
+        requestAsset._requestedByEmployeeNumber=state.profile.employee_number||'';
+        await api('/rest/v1/asset_removal_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({patch_id:state.currentPatchId,access_point_id:aid,access_point_name:ap.name,asset_id:xid,asset_data:requestAsset,requested_by:state.profile.id,status:'pending'})});
+        const msg=isBallast?`Ballast removal request for ${removalAmount} tonnes submitted for approval.`:(isBulkAsset||['Bearer','Sleeper'].includes(assetType))?`Removal request for ${removalAmount} ${assetType.toLowerCase()} unit${removalAmount===1?'':'s'} submitted for approval.`:'Removal request submitted for approval.';
+        alert(msg); if(isAdmin())await loadAdminData();else{await loadUserRequests();renderAccessDetail(state.currentPatchId,state.currentAccessId);}return;
       }
 
       await mutateInventory(state.currentPatchId,inv=>{
@@ -1676,27 +1689,25 @@ Please refresh after the newest deployment is available.`):'The central server c
         const i=(ap2.assets||[]).findIndex(x=>String(x.id)===String(xid));if(i<0)throw new Error('Asset not found.');
         const currentAsset=ap2.assets[i];
         if(currentAsset.type==='Ballast'){
-          const current=Number(currentAsset.ballastAmountTons||0);
-          const qty=Number(removalAmount);
+          const current=Number(currentAsset.ballastAmountTons||0);const qty=Number(removalAmount);
           if(qty>current)throw new Error('Removal amount exceeds the available ballast.');
           currentAsset.ballastAmountTons=Number((current-qty).toFixed(3));
           inv.history.unshift({...currentAsset,id:uid(),ballastAmountTons:qty,removedAmountTons:qty,originalBallastAmountTons:current,removed:Date.now(),accessPointId:ap2.id,accessPointName:ap2.name,workOrderNumber,removedById:state.profile.id,removedByName:state.profile.name||'Unknown user',removedByEmployeeNumber:state.profile.employee_number||'',status:'Removed'});
-          if(currentAsset.ballastAmountTons<=0.000001) ap2.assets.splice(i,1);
-        } else if(['Bearer','Sleeper'].includes(String(currentAsset.type||''))){
-          const current=Number(currentAsset.quantity||currentAsset.amount||0);
-          if(current<1)throw new Error(`No ${currentAsset.type.toLowerCase()} units remain.`);
-          const removedUnit={...currentAsset,id:uid(),quantity:1,amount:1,removedQuantity:1,originalQuantity:current,removed:Date.now(),accessPointId:ap2.id,accessPointName:ap2.name,workOrderNumber,removedById:state.profile.id,removedByName:state.profile.name||'Unknown user',removedByEmployeeNumber:state.profile.employee_number||'',status:'Removed'};
+          if(currentAsset.ballastAmountTons<=0.000001)ap2.assets.splice(i,1);
+        } else if(Number(currentAsset.quantity??currentAsset.amount??0)>0){
+          const current=Number(currentAsset.quantity??currentAsset.amount??0);const qty=Number(removalAmount||1);
+          if(!Number.isInteger(qty)||qty<1||qty>current)throw new Error(`Removal amount must be between 1 and ${current}.`);
+          const removedUnit={...currentAsset,id:uid(),quantity:qty,amount:qty,removedQuantity:qty,originalQuantity:current,removed:Date.now(),accessPointId:ap2.id,accessPointName:ap2.name,workOrderNumber,removedById:state.profile.id,removedByName:state.profile.name||'Unknown user',removedByEmployeeNumber:state.profile.employee_number||'',status:'Removed'};
           inv.history.unshift(removedUnit);
-          const remaining=current-1;
-          if(remaining<=0){ ap2.assets.splice(i,1); }
-          else { currentAsset.quantity=remaining; currentAsset.amount=remaining; }
+          const remaining=current-qty;
+          if(remaining<=0)ap2.assets.splice(i,1);else{currentAsset.quantity=remaining;currentAsset.amount=remaining;}
         } else {
           const [assetRemoved]=ap2.assets.splice(i,1);
           inv.history.unshift({...assetRemoved,removed:Date.now(),accessPointId:ap2.id,accessPointName:ap2.name,workOrderNumber,removedById:state.profile.id,removedByName:state.profile.name||'Unknown user',removedByEmployeeNumber:state.profile.employee_number||'',status:'Removed'});
         }
       });
       renderAccessDetail(state.currentPatchId,aid);
-    } catch(e) { alert(e.message||'Could not remove asset from the central database.'); }
+    }catch(e){alert(e.message||'Could not remove asset from the central database.');}
   }
 
   async function mutateInventory(patchId, mutator){
@@ -1965,8 +1976,36 @@ Please refresh after the newest deployment is available.`):'The central server c
   function renderApprovals(){state.currentView='admin';state.adminSubView='approvals';nav('navAdmin');const rows=pendingApprovals();$('#view').innerHTML=`<div class="queue-head"><button class="back" id="adminBack">← Back to Admin</button><div><div class="section-title">Pending Asset Approvals <span class="pill" style="margin-left:8px" id="queueTypeCount">${rows.length} pending</span></div><div class="sub">This queue stays open while live notifications update in the background.</div></div><button class="btn light" id="refreshApprovalQueue" type="button">↻ Refresh</button></div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')}</div><div class="sub">Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}</div><div class="af-audit"><b>Submitted by:</b> ${esc(r.asset_data?.submittedByName||personName(r.requested_by))}${r.asset_data?.submittedByEmployeeNumber?` · ${esc(r.asset_data.submittedByEmployeeNumber)}`:''} · ${esc(r.created_at?new Date(r.created_at).toLocaleString():'—')}</div><div class="actions"><button class="btn primary" data-approve="${esc(r.id)}">Approve</button><button class="btn danger" data-reject="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending asset approvals</b><span>New submissions will appear here automatically.</span></div>`}`;$('#adminBack').onclick=renderAdmin;$('#refreshApprovalQueue').onclick=()=>openApprovals().catch(e=>alert(e.message));document.querySelectorAll('[data-approve]').forEach(b=>b.onclick=()=>decideApproval(b.dataset.approve,'approved'));document.querySelectorAll('[data-reject]').forEach(b=>b.onclick=()=>decideApproval(b.dataset.reject,'rejected'));updateApprovalBadge();}
   async function decideApproval(id,status){const r=state.approvals.find(x=>String(x.id)===String(id));if(!r)return; if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');ap.assets=ap.assets||[];if(!ap.assets.some(a=>String(a.id)===String(r.asset_data?.id))){ const submitted={...r.asset_data}; submitted.submittedById=submitted.submittedById||r.requested_by; submitted.submittedByName=submitted.submittedByName||personName(r.requested_by); submitted.submittedByEmployeeNumber=submitted.submittedByEmployeeNumber||profileFor(r.requested_by)?.employee_number||''; submitted.submittedAt=submitted.submittedAt||r.created_at||now(); submitted.approvedById=state.profile.id; submitted.approvedByName=state.profile.name; submitted.approvedByEmployeeNumber=state.profile.employee_number; submitted.approvedAt=now(); ap.assets.push(submitted); }});}await api(`/rest/v1/asset_approvals?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now(),approved_by_name:status==='approved'?state.profile.name:null,approved_by_employee_number:status==='approved'?state.profile.employee_number:null})});await loadAdminData();renderApprovals();}
 
-  function renderRemovalRequests(){state.currentView='admin';state.adminSubView='removals';nav('navAdmin');const rows=pendingRemovals();$('#view').innerHTML=`<div class="queue-head"><button class="back" id="remBack">← Back to Admin</button><div><div class="section-title">Removal Requests <span class="pill" style="margin-left:8px" id="queueTypeCount">${rows.length} pending</span></div><div class="sub">This queue stays open while live notifications update in the background.</div></div><button class="btn light" id="refreshRemovalQueue" type="button">↻ Refresh</button></div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')} · ${esc(r.asset_id)}</div><div class="sub">Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}${r.asset_data?.type==='Ballast'&&r.asset_data?._removalAmountTons?` · Remove: ${esc(r.asset_data._removalAmountTons)} t`:''}</div><div class="sub">Work Order: ${esc(r.asset_data?._workOrderNumber||'—')} · Requested by: ${esc(r.asset_data?._requestedByName||'—')}${r.asset_data?._requestedByEmployeeNumber?` · Employee: ${esc(r.asset_data._requestedByEmployeeNumber)}`:''}</div><div class="actions"><button class="btn primary" data-approve-removal="${esc(r.id)}">Approve</button><button class="btn danger" data-reject-removal="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending removal requests</b></div>`}`;$('#remBack').onclick=renderAdmin;$('#refreshRemovalQueue').onclick=()=>openRemovalRequests().catch(e=>alert(e.message));document.querySelectorAll('[data-approve-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.approveRemoval,'approved'));document.querySelectorAll('[data-reject-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.rejectRemoval,'rejected'));updateApprovalBadge();}
-  async function decideRemoval(id,status){const r=state.removalRequests.find(x=>String(x.id)===String(id));if(!r)return;if(status==='approved'){await mutateInventory(r.patch_id,inv=>{const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(r.asset_id));if(i<0)throw new Error('The asset is already gone.');const currentAsset=ap.assets[i];if(currentAsset.type==='Ballast'){const qty=Number(r.asset_data?._removalAmountTons||currentAsset.ballastAmountTons||0);const current=Number(currentAsset.ballastAmountTons||0);if(!(qty>0)||qty>current)throw new Error('Invalid ballast removal amount.');currentAsset.ballastAmountTons=Number((current-qty).toFixed(3));inv.history.unshift({...currentAsset,id:uid(),ballastAmountTons:qty,removedAmountTons:qty,originalBallastAmountTons:current,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,workOrderNumber:r.asset_data?._workOrderNumber||'',removedById:r.requested_by||null,removedByName:r.asset_data?._requestedByName||'Unknown user',removedByEmployeeNumber:r.asset_data?._requestedByEmployeeNumber||'',approvedById:state.profile.id,approvedByName:state.profile.name||'Unknown user',approvedByEmployeeNumber:state.profile.employee_number||'',status:'Removed'});if(currentAsset.ballastAmountTons<=0.000001)ap.assets.splice(i,1);}else if(['Bearer','Sleeper'].includes(String(currentAsset.type||'')) && Number(r.asset_data?._removalQuantity||0)>0){const current=Number(currentAsset.quantity||currentAsset.amount||0);if(current<1)throw new Error(`No ${currentAsset.type.toLowerCase()} units remain.`);const removedUnit={...currentAsset,id:uid(),quantity:1,amount:1,removedQuantity:1,originalQuantity:current,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,workOrderNumber:r.asset_data?._workOrderNumber||'',removedById:r.requested_by||null,removedByName:r.asset_data?._requestedByName||'Unknown user',removedByEmployeeNumber:r.asset_data?._requestedByEmployeeNumber||'',approvedById:state.profile.id,approvedByName:state.profile.name||'Unknown user',approvedByEmployeeNumber:state.profile.employee_number||'',status:'Removed'};inv.history.unshift(removedUnit);const remaining=current-1;if(remaining<=0)ap.assets.splice(i,1);else{currentAsset.quantity=remaining;currentAsset.amount=remaining;}}else{const [asset]=ap.assets.splice(i,1);inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,workOrderNumber:r.asset_data?._workOrderNumber||'',removedById:r.requested_by||null,removedByName:r.asset_data?._requestedByName||'Unknown user',removedByEmployeeNumber:r.asset_data?._requestedByEmployeeNumber||'',approvedById:state.profile.id,approvedByName:state.profile.name||'Unknown user',approvedByEmployeeNumber:state.profile.employee_number||'',status:'Removed'});}});}await api(`/rest/v1/asset_removal_requests?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});await loadAdminData();renderRemovalRequests();}
+  function renderRemovalRequests(){state.currentView='admin';state.adminSubView='removals';nav('navAdmin');const rows=pendingRemovals();$('#view').innerHTML=`<div class="queue-head"><button class="back" id="remBack">← Back to Admin</button><div><div class="section-title">Removal Requests <span class="pill" style="margin-left:8px" id="queueTypeCount">${rows.length} pending</span></div><div class="sub">This queue stays open while live notifications update in the background.</div></div><button class="btn light" id="refreshRemovalQueue" type="button">↻ Refresh</button></div>${rows.length?rows.map(r=>`<div class="card"><div class="title">${esc(r.asset_data?.type||'Asset')}</div><div class="sub">Patch: ${esc(state.patches.find(p=>p.id===r.patch_id)?.name||r.patch_id)} · Access: ${esc(r.access_point_name)}</div><div class="sub">SC: ${esc(r.asset_data?.sc||'—')} · Points: ${esc(r.asset_data?.points||'—')}${r.asset_data?.type==='Ballast'&&r.asset_data?._removalAmountTons?` · Remove: ${esc(r.asset_data._removalAmountTons)} t`:r.asset_data?._removalQuantity?` · Remove: ${esc(r.asset_data._removalQuantity)} unit${Number(r.asset_data._removalQuantity)===1?'':'s'}`:''}</div><div class="sub">Work Order: ${esc(r.asset_data?._workOrderNumber||'—')} · Requested by: ${esc(r.asset_data?._requestedByName||'—')}${r.asset_data?._requestedByEmployeeNumber?` · Employee: ${esc(r.asset_data._requestedByEmployeeNumber)}`:''}</div><div class="actions"><button class="btn primary" data-approve-removal="${esc(r.id)}">Approve</button><button class="btn danger" data-reject-removal="${esc(r.id)}">Reject</button></div></div>`).join(''):`<div class="card empty"><b>No pending removal requests</b></div>`}`;$('#remBack').onclick=renderAdmin;$('#refreshRemovalQueue').onclick=()=>openRemovalRequests().catch(e=>alert(e.message));document.querySelectorAll('[data-approve-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.approveRemoval,'approved'));document.querySelectorAll('[data-reject-removal]').forEach(b=>b.onclick=()=>decideRemoval(b.dataset.rejectRemoval,'rejected'));updateApprovalBadge();}
+  async function decideRemoval(id,status){
+    const r=state.removalRequests.find(x=>String(x.id)===String(id));if(!r)return;
+    if(status==='approved'){
+      await mutateInventory(r.patch_id,inv=>{
+        const ap=inv.accessPoints.find(x=>String(x.id)===String(r.access_point_id));if(!ap)throw new Error('The access point no longer exists.');
+        const i=(ap.assets||[]).findIndex(x=>String(x.id)===String(r.asset_id));if(i<0)throw new Error('The asset is already gone.');
+        const currentAsset=ap.assets[i];
+        const audit={workOrderNumber:r.asset_data?._workOrderNumber||'',removedById:r.requested_by||null,removedByName:r.asset_data?._requestedByName||'Unknown user',removedByEmployeeNumber:r.asset_data?._requestedByEmployeeNumber||'',approvedById:state.profile.id,approvedByName:state.profile.name||'Unknown user',approvedByEmployeeNumber:state.profile.employee_number||''};
+        if(currentAsset.type==='Ballast'){
+          const qty=Number(r.asset_data?._removalAmountTons||0);const current=Number(currentAsset.ballastAmountTons||0);
+          if(!(qty>0)||qty>current)throw new Error('Invalid ballast removal amount.');
+          currentAsset.ballastAmountTons=Number((current-qty).toFixed(3));
+          inv.history.unshift({...currentAsset,id:uid(),ballastAmountTons:qty,removedAmountTons:qty,originalBallastAmountTons:current,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,...audit,status:'Removed'});
+          if(currentAsset.ballastAmountTons<=0.000001)ap.assets.splice(i,1);
+        } else if(Number(r.asset_data?._removalQuantity||0)>0 && Number(currentAsset.quantity??currentAsset.amount??0)>0){
+          const current=Number(currentAsset.quantity??currentAsset.amount??0);const qty=Number(r.asset_data._removalQuantity);
+          if(!Number.isInteger(qty)||qty<1||qty>current)throw new Error(`Invalid removal quantity. Available: ${current}.`);
+          inv.history.unshift({...currentAsset,id:uid(),quantity:qty,amount:qty,removedQuantity:qty,originalQuantity:current,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,...audit,status:'Removed'});
+          const remaining=current-qty;
+          if(remaining<=0)ap.assets.splice(i,1);else{currentAsset.quantity=remaining;currentAsset.amount=remaining;}
+        } else {
+          const [asset]=ap.assets.splice(i,1);
+          inv.history.unshift({...asset,removed:Date.now(),accessPointId:ap.id,accessPointName:ap.name,...audit,status:'Removed'});
+        }
+      });
+    }
+    await api(`/rest/v1/asset_removal_requests?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reviewed_by:state.profile.id,reviewed_at:now()})});
+    await loadAdminData();renderRemovalRequests();
+  }
 
   function startSessionMaintenance(){
     const refresh=()=>{ if(state.session?.refresh_token) refreshAuthSession().catch(()=>{}); };
