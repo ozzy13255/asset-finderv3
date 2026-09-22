@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="en">
-<head><meta name="asset-finder-version" content="3.10.1"/><meta name="asset-finder-version" content="3.8.4"/>
+<head><meta name="asset-finder-version" content="3.10.1"/><meta name="asset-finder-version" content="3.11.0"/>
 <meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#071a35" name="theme-color"/><meta content="Asset Finder - railway access points and asset register by OGRT" name="description"/>
 <link href="manifest.webmanifest" rel="manifest"/>
@@ -340,6 +340,20 @@ body,#view{color:#081f35!important;}
 .af38-admin-card-title,.af38-admin-card-sub{opacity:1!important;}
 .queue-head .sub{color:#d9eaf7!important;font-weight:650!important;}
 @media(max-width:700px){.af38-create-user-card{padding:20px!important;min-height:0!important;}.af38-create-user-card>.title{font-size:20px!important;}}
+</style>
+
+<style>
+.af-sketch-wrap{margin-top:12px;border:1px solid #b8c4d0;border-radius:12px;background:#fff;overflow:auto;padding:8px}
+.af-sketch-title{font-weight:900;font-size:17px;margin:2px 0 4px}
+.af-sketch-help{font-size:12px;color:#526273;margin-bottom:8px}
+.af-sketch-board{position:relative;width:100%;min-width:920px;line-height:0}
+.af-sketch-board img{display:block;width:100%;height:auto;border-radius:6px}
+.af-sketch-input{position:absolute;box-sizing:border-box;width:5.2%;height:4.7%;min-width:42px;padding:2px 4px;border:2px solid #c55a5a;border-radius:2px;background:rgba(255,255,255,.96);color:#111;font:700 12px/1.1 system-ui,sans-serif;text-align:center;z-index:2}
+.af-sketch-input:focus{outline:3px solid rgba(20,125,220,.45);border-color:#176fc1}
+.af-sketch-input.wide{width:7%}
+.af-sketch-input.tiny{width:4.2%;min-width:36px}
+.af-sketch-note{font-size:12px;color:#b33b3b;font-weight:700;padding:7px 4px 2px;line-height:1.3}
+@media(max-width:700px){.af-sketch-board{min-width:760px}.af-sketch-input{font-size:11px}}
 </style>
 </head>
 <body>
@@ -1523,6 +1537,9 @@ Please refresh after the newest deployment is available.`):'The central server c
     return `<option value="">Select asset type</option>${types.map(t=>`<option value="${esc(t)}" ${selected===t?'selected':''}>${esc(t)}</option>`).join('')}`;
   }
 
+  function sketchInput(x,key,left,top,title,cls=''){ const v=x?.sketch?.[key]??''; return `<input class="af-sketch-input ${cls}" data-sketch-key="${key}" style="left:${left}%;top:${top}%" value="${esc(v)}" title="${esc(title)}" aria-label="${esc(title)}">`; }
+  function readSketchData(type){ const out={}; document.querySelectorAll('#dynamicAssetFields .af-sketch-input').forEach(el=>{const k=el.dataset.sketchKey;if(k)out[k]=el.value.trim();}); return out; }
+
   function dynamicAssetFields(x={}){
     const type=x.type||'';
     const common = `
@@ -1536,14 +1553,34 @@ Please refresh after the newest deployment is available.`):'The central server c
       <div class="field"><label>Point Number *</label><input id="apoints" value="${esc(x.points||'')}" required></div>
       <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
       <div class="field full"><label>Hand / Set *</label><div class="choice-row"><label><input type="radio" name="switchHand" value="Left hand" ${x.switchHand==='Left hand'?'checked':''}> Left hand</label><label><input type="radio" name="switchHand" value="Right hand" ${x.switchHand==='Right hand'?'checked':''}> Right hand</label><label><input type="radio" name="switchHand" value="Full set" ${(!x.switchHand||x.switchHand==='Full set')?'checked':''}> Full set</label></div></div>
-      <div class="field"><label>Stock Length (m) *</label><input id="stockLength" inputmode="decimal" value="${esc(x.stockLength||'')}" required></div>
-      <div class="field"><label>Switch Length (m) *</label><input id="switchLength" inputmode="decimal" value="${esc(x.switchLength||'')}" required></div>
-      <div class="field"><label>Switch Type *</label><select id="switchType" required><option value="">Select switch type</option>${['Straight cut','Chamfered','Undercut'].map(t=>`<option value="${t}" ${x.switchType===t?'selected':''}>${t}</option>`).join('')}</select></div>`;
+      <div class="field"><label>Switch Type *</label><select id="switchType" required><option value="">Select switch type</option>${['Straight cut','Chamfered','Undercut'].map(t=>`<option value="${t}" ${x.switchType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Sketch dimensions</label><div class="small">Type directly into every white box on the switch sketch. Dimensions are in mm except radii in m.</div></div>
+      <div class="af-sketch-wrap field full"><div class="af-sketch-title">Switch Design</div><div class="af-sketch-help">All white boxes are editable text fields. Enter dimensions exactly as shown on your switch drawing.</div><div class="af-sketch-board"><img src="./sketch-switch.jpg" alt="Switch design sketch">
+        ${sketchInput(x,'s_lh_stock',25,23,'LH stock rail')}${sketchInput(x,'s_total',48,17,'Total length')}
+        ${sketchInput(x,'s_drill_1',9,27,'Drill option')} ${sketchInput(x,'s_drill_2',58,27,'Drill option')} ${sketchInput(x,'s_drill_3',88,31,'Drill option')}
+        ${sketchInput(x,'s_lh_front',22,32,'LH front')} ${sketchInput(x,'s_lh_switch',53,43,'LH switch rail')}
+        ${sketchInput(x,'s_radius',24,39,'Main line radius')} ${sketchInput(x,'s_radius_unit',31,39,'Radius unit','tiny')} ${sketchInput(x,'s_comp_rad',49,39,'Comp/Rad drilling','tiny')}
+        ${sketchInput(x,'s_rh_switch',53,52,'RH switch rail')} ${sketchInput(x,'s_toe_nose',78,46,'Toe to nose')}
+        ${sketchInput(x,'s_rh_front',22,54,'RH front')} ${sketchInput(x,'s_rh_stock',26,62,'RH stock rail')}
+        ${sketchInput(x,'s_twisted_fronts',25,68,'Twisted fronts')} ${sketchInput(x,'s_distance_toe',63,70,'Distance from toe')}
+        ${sketchInput(x,'s_drill_4',9,52,'Drill option')} ${sketchInput(x,'s_drill_5',64,55,'Drill option')} ${sketchInput(x,'s_drill_6',87,50,'Drill option')}
+      </div><div class="af-sketch-note">Note: All dimensions are in millimetres except radii which are expressed in metres.</div></div>`;
     if(type==='Crossing') return common + `
       <div class="field"><label>Point Number *</label><input id="apoints" value="${esc(x.points||'')}" required></div>
       <div class="field"><label>Crossing Type *</label><select id="crossingType" required><option value="">Select crossing type</option>${['Common Crossing','Diamond Crossing','Single Slip','Double Slip','Other'].map(t=>`<option value="${t}" ${x.crossingType===t?'selected':''}>${t}</option>`).join('')}</select></div>
       <div class="field"><label>Rail Weight (lbs) *</label><input id="railWeight" inputmode="decimal" value="${esc(x.railWeight||'')}" required></div>
-      <div class="field full"><div class="notice"><b>Crossing dimensions</b><br>Dimension fields will be added once the crossing order-form sketch is provided.</div></div>`;
+      <div class="af-sketch-wrap field full"><div class="af-sketch-title">Crossing Design</div><div class="af-sketch-help">All white boxes are editable text fields. Enter dimensions exactly as shown on your crossing drawing.</div><div class="af-sketch-board"><img src="./sketch-crossing.jpg" alt="Crossing design sketch">
+        ${sketchInput(x,'c_overall_lh_wing',22,20,'Overall LH wing length','wide')} ${sketchInput(x,'c_total',46,20,'Total length')} ${sketchInput(x,'c_lh_leg',66,20,'LH leg')}
+        ${sketchInput(x,'c_lh_wing_front',28,28,'LH wing front')} ${sketchInput(x,'c_lh_twisted_vee',84,25,'LH twisted vee leg')} ${sketchInput(x,'c_dist_nose_lh',84,31,'Distance from nose')}
+        ${sketchInput(x,'c_r1',25,34,'R1')} ${sketchInput(x,'c_r1_unit',31,34,'R1 unit','tiny')} ${sketchInput(x,'c_r3',58,34,'R3')} ${sketchInput(x,'c_r3_unit',65,34,'R3 unit','tiny')}
+        ${sketchInput(x,'c_wing_cover_top',52,31,'Wing cover')} ${sketchInput(x,'c_front_spread',17,45,'Front spread')} ${sketchInput(x,'c_leg_spread',91,43,'Leg spread')}
+        ${sketchInput(x,'c_r2',25,49,'R2')} ${sketchInput(x,'c_r2_unit',31,49,'R2 unit','tiny')} ${sketchInput(x,'c_r4',58,49,'R4')} ${sketchInput(x,'c_r4_unit',65,49,'R4 unit','tiny')}
+        ${sketchInput(x,'c_rh_wing_front',28,59,'RH wing front')} ${sketchInput(x,'c_overall_rh_wing',22,65,'Overall RH wing length','wide')} ${sketchInput(x,'c_rh_twisted_vee',84,58,'RH twisted vee leg')}
+        ${sketchInput(x,'c_dist_nose_rh',84,64,'Distance from nose')} ${sketchInput(x,'c_rh_leg',66,64,'RH leg')} ${sketchInput(x,'c_wing_cover_bottom',52,46,'Wing cover')}
+        ${sketchInput(x,'c_drill_1',10,36,'Drill option')} ${sketchInput(x,'c_drill_2',90,37,'Drill option')} ${sketchInput(x,'c_drill_3',10,53,'Drill option')} ${sketchInput(x,'c_drill_4',90,52,'Drill option')}
+        ${Array.from({length:12},(_,i)=>sketchInput(x,'c_bearer_'+(i+1),32+i*3.8,76,'Bearer centre','tiny')).join('')}
+        ${Array.from({length:12},(_,i)=>sketchInput(x,'c_baseplate_'+(i+1),32+i*3.8,81,'Baseplate','tiny')).join('')}
+      </div><div class="af-sketch-note">Note: All dimensions are in millimetres except radii which are expressed in metres.</div></div>`;
     if(type==='IRJ') return common + `
       <div class="field"><label>Rail Length *</label><div style="display:grid;grid-template-columns:1fr 120px;gap:8px"><input id="railLength" inputmode="decimal" value="${esc(x.railLength||'')}" required><select id="railLengthUnit" required><option value="m" ${(!x.railLengthUnit||x.railLengthUnit==='m')?'selected':''}>m</option><option value="ft" ${x.railLengthUnit==='ft'?'selected':''}>ft</option><option value="mm" ${x.railLengthUnit==='mm'?'selected':''}>mm</option></select></div></div>
       <div class="field"><label>Rail Type *</label><select id="arail" required><option value="">Select rail type</option>${['56E1','54E1','CEN60','Other'].map(t=>`<option value="${t}" ${x.railType===t?'selected':''}>${t}</option>`).join('')}</select></div>
@@ -1561,7 +1598,7 @@ Please refresh after the newest deployment is available.`):'The central server c
   function readAssetDynamicFields(){
     const type=$('#atype')?.value||'';
     const get=v=>document.querySelector(v)?.value?.trim()||'';
-    const data={type,sc:get('#asc'),description:get('#adesc'),points:get('#apoints'),railType:get('#arail'),railLength:get('#railLength'),railLengthUnit:get('#railLengthUnit'),railWeight:get('#railWeight'),switchHand:document.querySelector('input[name="switchHand"]:checked')?.value||'',stockLength:get('#stockLength'),switchLength:get('#switchLength'),switchType:get('#switchType'),crossingType:get('#crossingType'),irjType:get('#irjType'),materialAmount:get('#materialAmount'),materialType:get('#materialType'),materialLength:get('#materialLength'),materialLengthUnit:get('#materialLengthUnit'),ballastAmountTons:get('#ballastAmountTons'),miscDetails:get('#miscDetails')};
+    const data={type,sc:get('#asc'),description:get('#adesc'),points:get('#apoints'),railType:get('#arail'),railLength:get('#railLength'),railLengthUnit:get('#railLengthUnit'),railWeight:get('#railWeight'),switchHand:document.querySelector('input[name="switchHand"]:checked')?.value||'',stockLength:get('#stockLength'),switchLength:get('#switchLength'),switchType:get('#switchType'),crossingType:get('#crossingType'),irjType:get('#irjType'),materialAmount:get('#materialAmount'),materialType:get('#materialType'),materialLength:get('#materialLength'),materialLengthUnit:get('#materialLengthUnit'),ballastAmountTons:get('#ballastAmountTons'),miscDetails:get('#miscDetails'),sketch:readSketchData(type)};
     if(!type) throw new Error('Please select an asset type.');
     if(!['Ballast','Bearer','Sleeper','Miscellaneous'].includes(type) && !data.sc) throw new Error('SC number is required.');
     if(type==='Switch' && (!data.points||!data.railType||!data.switchHand||!data.stockLength||!data.switchLength||!data.switchType)) throw new Error('Please complete all Switch fields.');
@@ -2132,7 +2169,7 @@ Please refresh after the newest deployment is available.`):'The central server c
         window.location.reload();
       });
       try {
-        const reg = await navigator.serviceWorker.register('./sw.js?v=3.8.6', {scope: './', updateViaCache: 'none'});
+        const reg = await navigator.serviceWorker.register('./sw.js?v=3.11.0', {scope: './', updateViaCache: 'none'});
         const checkForUpdate = () => reg.update().catch(() => {});
         checkForUpdate();
         setInterval(checkForUpdate, 60000);
