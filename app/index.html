@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="en">
-<head><meta name="asset-finder-version" content="3.10.1"/>
+<head><meta name="asset-finder-version" content="3.11.0"/>
 <meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#071a35" name="theme-color"/><meta content="Asset Finder - railway access points and asset register by OGRT" name="description"/>
 <link href="manifest.webmanifest" rel="manifest"/>
@@ -359,6 +359,17 @@ body,#view{color:#081f35!important;}
 .af-sketch-wrap .af-sketch-input.bearer{width:46px !important;max-width:46px !important;height:28px}
 .af-sketch-note{font-size:12px;color:#b33b3b;font-weight:700;padding:7px 4px 2px;line-height:1.3}
 @media(max-width:700px){.af-sketch-board{width:1060px;min-width:1060px}.af-sketch-board.crossing{height:650px}.af-sketch-wrap .af-sketch-input{font-size:11px}}
+</style>
+
+<style id="crossing-sketch-v2">
+.af-crossing-sketch-board{position:relative;width:1366px;min-width:1366px;height:570px;background:#fff url('sketch-crossing-new.jpg') center/1366px 570px no-repeat;border:1px solid #cbd5df;border-radius:8px;overflow:hidden}
+.af-crossing-sketch-board .af-sketch-input{height:25px!important;min-height:25px!important;border:1.5px solid #176da8!important;border-radius:3px!important;background:rgba(255,255,255,.92)!important;color:#08233c!important;font-size:12px!important;font-weight:750!important;padding:2px 4px!important;text-align:center!important}
+.af-crossing-sketch-board .af-sketch-input.select{height:27px!important}
+.af-crossing-sketch-display{margin-top:12px;border:1px solid #cbd5df;border-radius:10px;background:#fff;padding:10px;overflow:auto}
+.af-crossing-sketch-display .title{font-weight:900;font-size:16px;margin-bottom:7px}
+.af-crossing-sketch-display .board{position:relative;width:1366px;min-width:1366px;height:570px;background:#fff url('sketch-crossing-new.jpg') center/1366px 570px no-repeat}
+.af-crossing-sketch-display .value{position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:2px 4px;border:1.5px solid #176da8;border-radius:3px;background:rgba(255,255,255,.94);color:#08233c;font-size:12px;font-weight:800;white-space:nowrap}
+@media(max-width:700px){.af-crossing-sketch-board,.af-crossing-sketch-display .board{width:1366px;min-width:1366px}}
 </style>
 </head>
 <body>
@@ -1328,7 +1339,7 @@ Please refresh after the newest deployment is available.`):'The central server c
     const quantity=hasUnitQuantity?Number(x.quantity||x.amount||0):0;
     const controls=isAdmin()?`<button class="btn light" data-edit-asset="${esc(x.id)}">Edit</button><button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Remove Ballast':hasUnitQuantity?`Remove ${Number(x.quantity||x.amount||0)>1?'Bulk ':''}${esc(x.type)}`:'Remove'}</button>`:pendingRemoval?`<button class="btn light" disabled>Removal awaiting approval</button>`:`<button class="btn danger" data-remove-asset="${esc(x.id)}">${x.type==='Ballast'?'Request Ballast Removal':hasUnitQuantity?`Request ${Number(x.quantity||x.amount||0)>1?'Bulk ':''}${esc(x.type)} Removal`:'Request Asset Removal'}</button>`;
     const detail=[`SC: ${esc(x.sc||'—')}`,x.points?`Points: ${esc(x.points)}`:'',hasUnitQuantity?`Qty: ${esc(quantity)}`:'',x.type==='Ballast'?`Amount: ${esc(x.ballastAmountTons)} t`:(x.railLength?`Rail length: ${esc(x.railLength)} ${esc(x.railLengthUnit||'m')}`:''),x.length?`Length: ${esc(x.length)} ${esc(x.lengthUnit||'')}`:'',x.railType?`Rail: ${esc(x.railType)}`:''].filter(Boolean).join(' · ');
-    return `<div class="card ${highlight?'af351-highlight':''}" id="asset-${esc(x.id)}"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">${detail}</div><div class="meta">${statusBadge(x.status)} ${x.railType?`<span class="badge planned">${esc(x.railType)}</span>`:''}${pendingRemoval?` <span class="badge planned">Removal awaiting approval</span>`:''}</div></div><div class="actions">${controls}</div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}<div class="af-audit">${x.submittedByName?`<div><b>Submitted by:</b> ${esc(x.submittedByName)}${x.submittedByEmployeeNumber?` · ${esc(x.submittedByEmployeeNumber)}`:''}${x.submittedAt?` · ${esc(new Date(x.submittedAt).toLocaleString())}`:''}</div>`:''}${x.approvedByName?`<div><b>Approved by:</b> ${esc(x.approvedByName)}${x.approvedByEmployeeNumber?` · ${esc(x.approvedByEmployeeNumber)}`:''}${x.approvedAt?` · ${esc(new Date(x.approvedAt).toLocaleString())}`:''}</div>`:''}</div>${x.photos?.length?`<div class="photo-grid">${x.photos.map(p=>`<img class="asset-photo" src="${p}" alt="Asset photo">`).join('')}</div>`:''}</div>`;
+    return `<div class="card ${highlight?'af351-highlight':''}" id="asset-${esc(x.id)}"><div class="cardhead"><div><div class="title">${esc(x.type||'Asset')}</div><div class="sub">${detail}</div><div class="meta">${statusBadge(x.status)} ${x.railType?`<span class="badge planned">${esc(x.railType)}</span>`:''}${pendingRemoval?` <span class="badge planned">Removal awaiting approval</span>`:''}</div></div><div class="actions">${controls}</div></div>${x.description?`<p class="sub">${esc(x.description)}</p>`:''}<div class="af-audit">${x.submittedByName?`<div><b>Submitted by:</b> ${esc(x.submittedByName)}${x.submittedByEmployeeNumber?` · ${esc(x.submittedByEmployeeNumber)}`:''}${x.submittedAt?` · ${esc(new Date(x.submittedAt).toLocaleString())}`:''}</div>`:''}${x.approvedByName?`<div><b>Approved by:</b> ${esc(x.approvedByName)}${x.approvedByEmployeeNumber?` · ${esc(x.approvedByEmployeeNumber)}`:''}${x.approvedAt?` · ${esc(new Date(x.approvedAt).toLocaleString())}`:''}</div>`:''}</div>${x.type==='Crossing'?renderCrossingSketchDisplay(x.sketch):''}${x.photos?.length?`<div class="photo-grid">${x.photos.map(p=>`<img class="asset-photo" src="${p}" alt="Asset photo">`).join('')}</div>`:''}</div>`;
   }
   function statusBadge(s){const t=s||'In Use';const cls=/defective/i.test(t)?'defective':/removed/i.test(t)?'removed':/stored/i.test(t)?'planned':'active';return `<span class="badge ${cls}">${esc(t)}</span>`;}
   function validCoords(lat,lng){
@@ -1608,16 +1619,41 @@ Please refresh after the newest deployment is available.`):'The central server c
     ${sketchInput(x,'s_twisted_fronts',170,455,'Twisted fronts')} ${sketchInput(x,'s_distance_toe',650,405,'Distance from toe')}
     ${sketchInput(x,'s_drill_4',70,325,'Drill option')} ${sketchInput(x,'s_drill_5',550,345,'Drill option')} ${sketchInput(x,'s_drill_6',780,290,'Drill option')}
   </div><div class="af-sketch-note">Note: All dimensions are in millimetres except radii which are expressed in metres.</div></div>`; }
-  function crossingSketch(x){ const bearers=Array.from({length:12},(_,i)=>sketchInput(x,'c_bearer_'+(i+1),360+i*48,570,'Bearer centre','bearer')).join(''); const base=Array.from({length:12},(_,i)=>sketchInput(x,'c_baseplate_'+(i+1),360+i*48,605,'Baseplate','bearer')).join(''); return `<div class="af-sketch-wrap field full"><div class="af-sketch-title">Crossing Design</div><div class="af-sketch-help">Custom technical sketch — every white box is a text field. Enter dimensions exactly as shown on your drawing.</div><div class="af-sketch-board crossing">${crossingSketchSvg}
-    ${sketchInput(x,'c_overall_lh_wing',210,75,'Overall LH wing length','wide')} ${sketchInput(x,'c_total',470,72,'Total length')} ${sketchInput(x,'c_lh_leg',730,55,'LH leg')}
-    ${sketchInput(x,'c_lh_wing_front',255,185,'LH wing front')} ${sketchInput(x,'c_lh_twisted_vee',800,135,'LH twisted vee leg')} ${sketchInput(x,'c_dist_nose_lh',800,165,'Distance from nose')}
-    ${sketchInput(x,'c_r1',335,235,'R1')} ${sketchInput(x,'c_r1_unit',405,235,'R1 unit','tiny')} ${sketchInput(x,'c_r3',650,235,'R3')} ${sketchInput(x,'c_r3_unit',720,235,'R3 unit','tiny')}
-    ${sketchInput(x,'c_wing_cover_top',500,210,'Wing cover')} ${sketchInput(x,'c_front_spread',130,300,'Front spread')} ${sketchInput(x,'c_leg_spread',900,280,'Leg spread')}
-    ${sketchInput(x,'c_r2',335,330,'R2')} ${sketchInput(x,'c_r2_unit',405,330,'R2 unit','tiny')} ${sketchInput(x,'c_r4',650,330,'R4')} ${sketchInput(x,'c_r4_unit',720,330,'R4 unit','tiny')}
-    ${sketchInput(x,'c_rh_wing_front',255,410,'RH wing front')} ${sketchInput(x,'c_overall_rh_wing',210,535,'Overall RH wing length','wide')} ${sketchInput(x,'c_rh_twisted_vee',800,410,'RH twisted vee leg')}
-    ${sketchInput(x,'c_dist_nose_rh',800,440,'Distance from nose')} ${sketchInput(x,'c_rh_leg',730,500,'RH leg')} ${sketchInput(x,'c_wing_cover_bottom',500,375,'Wing cover')}
-    ${sketchInput(x,'c_drill_1',65,105,'Drill option')} ${sketchInput(x,'c_drill_2',930,115,'Drill option')} ${sketchInput(x,'c_drill_3',65,425,'Drill option')} ${sketchInput(x,'c_drill_4',930,430,'Drill option')}
-    ${bearers}${base}</div><div class="af-sketch-note">Note: All dimensions are in millimetres except radii which are expressed in metres.</div></div>`; }
+  function crossingSketch(x){
+    const inp=(key,left,top,w,h,title,cls='')=>sketchInput(x,key,left,top,title,cls)+'';
+    return `<div class="af-sketch-wrap field full"><div class="af-sketch-title">Crossing Design <span style="font-weight:700;color:#526273;font-size:12px">(Optional)</span></div><div class="af-sketch-help">Type directly into the boxes on the drawing. The sketch is optional — you can leave every box blank.</div><div class="af-crossing-sketch-board">
+      ${inp('c_drill_lh',202,20,190,23,'LH Drill Option')}
+      ${inp('c_lh_wing_front',202,44,190,23,'LH Wing Front length')}
+      ${inp('c_r1',465,104,135,38,'R1')}
+      ${inp('c_r1_type',465,143,135,28,'R1 rail/type')}
+      ${inp('c_wing_cover_top',668,176,202,45,'Wing Cover')}
+      ${inp('c_r3',999,104,126,38,'R3')}
+      ${inp('c_r3_type',999,143,126,28,'R3 rail/type')}
+      ${inp('c_drill_rh',1222,20,144,23,'RH Drill Option')}
+      ${inp('c_lh_vee_leg',1222,44,144,23,'LH Vee Leg Length')}
+      ${inp('c_lh_twisted_vee',1275,215,75,25,'LH twisted Vee leg — Yes/No','select')}
+      ${inp('c_running_edge_wing_spread',135,299,135,47,'Running Edge Wing Spread')}
+      ${inp('c_running_edge_vee_spread',1182,299,126,47,'Running Edge Vee Spread')}
+      ${inp('c_r2',470,441,135,38,'R2')}
+      ${inp('c_r2_type',470,480,135,28,'R2 rail/type')}
+      ${inp('c_wing_cover_bottom',668,439,202,45,'Wing Cover')}
+      ${inp('c_r4',999,480,126,38,'R4')}
+      ${inp('c_r4_type',999,519,126,28,'R4 rail/type')}
+      ${inp('c_drill_lh_bottom',211,505,198,23,'LH Drill Option')}
+      ${inp('c_rh_wing_front',211,529,198,23,'RH Wing Front Length')}
+      ${inp('c_drill_rh_bottom',1216,505,150,23,'RH Drill Option')}
+      ${inp('c_rh_vee_leg',1216,529,150,23,'RH Vee Leg Length')}
+      ${inp('c_rh_twisted_vee',1275,386,75,25,'RH twisted Vee leg — Yes/No','select')}
+    </div><div class="af-sketch-note">All sketch fields are optional. Values are saved with the crossing and shown on the asset when it is viewed.</div></div>`;
+  }
+
+  function renderCrossingSketchDisplay(sketch){
+    if(!sketch || typeof sketch!=='object' || !Object.values(sketch).some(v=>String(v||'').trim())) return '';
+    const val=(k,left,top,w,h)=>{const v=String(sketch[k]??'').trim();return v?`<div class="value" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">${esc(v)}</div>`:''};
+    return `<div class="af-crossing-sketch-display"><div class="title">Crossing Sketch</div><div class="board">
+      ${val('c_drill_lh',202,20,190,23)}${val('c_lh_wing_front',202,44,190,23)}${val('c_r1',465,104,135,38)}${val('c_r1_type',465,143,135,28)}${val('c_wing_cover_top',668,176,202,45)}${val('c_r3',999,104,126,38)}${val('c_r3_type',999,143,126,28)}${val('c_drill_rh',1222,20,144,23)}${val('c_lh_vee_leg',1222,44,144,23)}${val('c_lh_twisted_vee',1275,215,75,25)}${val('c_running_edge_wing_spread',135,299,135,47)}${val('c_running_edge_vee_spread',1182,299,126,47)}${val('c_r2',470,441,135,38)}${val('c_r2_type',470,480,135,28)}${val('c_wing_cover_bottom',668,439,202,45)}${val('c_r4',999,480,126,38)}${val('c_r4_type',999,519,126,28)}${val('c_drill_lh_bottom',211,505,198,23)}${val('c_rh_wing_front',211,529,198,23)}${val('c_drill_rh_bottom',1216,505,150,23)}${val('c_rh_vee_leg',1216,529,150,23)}${val('c_rh_twisted_vee',1275,386,75,25)}
+    </div></div>`;
+  }
 
   function dynamicAssetFields(x={}){
     const type=x.type||'';
@@ -2227,7 +2263,7 @@ Please refresh after the newest deployment is available.`):'The central server c
         window.location.reload();
       });
       try {
-        const reg = await navigator.serviceWorker.register('./sw.js?v=3.10.1', {scope: './', updateViaCache: 'none'});
+        const reg = await navigator.serviceWorker.register('./sw.js?v=3.11.0', {scope: './', updateViaCache: 'none'});
         const checkForUpdate = () => reg.update().catch(() => {});
         checkForUpdate();
         setInterval(checkForUpdate, 60000);

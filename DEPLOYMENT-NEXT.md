@@ -1,4 +1,4 @@
-# Asset Finder v3.10.1 deployment
+# Asset Finder v3.11.0 deployment
 
 1. Deploy this build to the existing Vercel project.
 2. Keep the existing Supabase URL and anon key configuration.

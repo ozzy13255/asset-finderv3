@@ -1,8 +1,8 @@
-# Asset Finder v3.10.1
+# Asset Finder v3.11.0
 
 Railway access points and asset register platform.
 
-## v3.10.1
+## v3.11.0
 - Added automatic submission and approval attribution for new assets.
 - Pending approval cards now show the requested quantity for ballast, bearers, sleepers and other quantity-based assets.
 - Pending asset approvals show the submitter.
