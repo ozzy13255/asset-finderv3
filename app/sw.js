@@ -1,5 +1,5 @@
 /* Asset Finder PWA service worker */
-const CACHE_NAME = 'asset-finder-v3.13.0';
+const CACHE_NAME = 'asset-finder-v3.13.1';
 const APP_SHELL = [
   './',
   './index.html',
