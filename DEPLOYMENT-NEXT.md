@@ -1,8 +1,10 @@
-# Asset Finder v3.10.1 deployment
+# Asset Finder v3.13.2 — deployment notes
 
-1. Deploy this build to the existing Vercel project.
-2. Keep the existing Supabase URL and anon key configuration.
-3. The v3.10.1 attribution migration is already applied to the live Supabase database.
-4. After deployment, use the Asset Finder ↻ Refresh button once on an installed PWA if required.
+- Crossing sketch input overlays are aligned to the supplied technical drawing using the same fixed 1060×442 coordinate system.
+- Crossing sketch inputs no longer display or enforce `mm`; units are user-defined.
+- Switch technical sketch has been removed from the Add/Edit Asset workflow.
+- Switch assets retain Stock Length and Switch Length fields without a fixed unit in the label.
+- Crossing sketch remains optional.
+- PWA/service-worker cache version is v3.13.2.
 
-New asset submissions automatically record the submitter. Approval records automatically record the approving admin, and the approved asset displays both people and timestamps.
+Deploy the contents of this package to the existing Vercel project. Keep the existing Supabase configuration.
