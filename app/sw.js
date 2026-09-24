@@ -1,5 +1,5 @@
 /* Asset Finder PWA service worker */
-const CACHE_NAME = 'asset-finder-v3.11.0';
+const CACHE_NAME = 'asset-finder-v3.13.0';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const APP_SHELL = [
   './logo.png',
   './header-rail-bg.png',
   './ogrt-logo.png',
-  './sketch-crossing-new.jpg'
+  './crossing-diagram.png'
 ];
 
 self.addEventListener('install', event => {

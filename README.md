@@ -1,10 +1,15 @@
-# Asset Finder v3.11.0
+# Asset Finder v3.13.0
 
 Railway access points and asset register platform.
 
-## v3.11.0
+## v3.13.0
+- Finalised the supplied Switch and Crossing engineering sketches in the Add Asset workflow.
+- Crossing sketch is optional; every visible sketch entry box is editable.
+- Crossing sketch is also shown beneath the asset when saved, alongside asset photos.
+- Updated PWA/service-worker versioning for the new build.
+
+## v3.10.0
 - Added automatic submission and approval attribution for new assets.
-- Pending approval cards now show the requested quantity for ballast, bearers, sleepers and other quantity-based assets.
 - Pending asset approvals show the submitter.
 - Approved asset cards show Submitted by and Approved by with date/time.
 - Fly Tip and Scrap reports show submitter/handler attribution.
